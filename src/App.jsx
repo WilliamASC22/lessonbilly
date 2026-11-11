@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronRight,
   Clock3, GraduationCap, LockKeyhole, Mail, Menu, MonitorPlay,
   Plus, ShieldCheck, Sparkles, Star, TrendingUp, Users, Video,
-  X, LogOut, PencilLine, Send, Copy, Play, Pause, RotateCcw
+  X, LogOut, PencilLine, Send, Play, Pause, RotateCcw
 } from "lucide-react";
 import {
   createUserWithEmailAndPassword, onAuthStateChanged, reload,
@@ -50,6 +49,18 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "Not scheduled" : date.toLocaleString([], {
     dateStyle: "medium", timeStyle: "short"
   });
+}
+
+function normalizedLessonMinutes(value) {
+  const minutes = Number(value);
+  return [60, 90, 120, 150, 180].includes(minutes) ? minutes : 60;
+}
+
+function formatLessonDuration(value) {
+  const minutes = normalizedLessonMinutes(value);
+  const hours = Math.floor(minutes / 60);
+  const extraMinutes = minutes % 60;
+  return `${hours} hour${hours === 1 ? "" : "s"}${extraMinutes ? ` ${extraMinutes} minutes` : ""}`;
 }
 
 function toLocalInput(iso) {
@@ -525,23 +536,13 @@ function VerificationScreen({ user, onVerified }) {
             Resend verification email
           </button>
           {message && <div className="form-notice" role="status">{message}</div>}
-          <div className="hint-box">
-            Your account ID: <code>{user.uid}</code>
-            <button title="Copy account ID"
-              onClick={() => navigator.clipboard?.writeText(user.uid)}>
-              <Copy size={16} />
-            </button>
-          </div>
-          <p className="muted tiny">
-            If this is your tutor account, you'll paste this ID into two setup files later.
-          </p>
         </div>
       </div>
     </main>
   );
 }
 
-function LessonTimer({ minutes = 50 }) {
+function LessonTimer({ minutes = 60 }) {
   const [remaining, setRemaining] = useState(minutes * 60);
   const [running, setRunning] = useState(false);
 
@@ -756,7 +757,7 @@ function ParentDashboard({ user }) {
               </div>
               <p className="schedule-date">{formatDate(selected?.nextLessonAt)}</p>
               <p className="muted">
-                {selected?.durationMinutes || 50}-minute planned session
+                {formatLessonDuration(selected?.durationMinutes)} planned session
               </p>
               {selected?.meetingUrl ? (
                 <a
@@ -774,7 +775,7 @@ function ParentDashboard({ user }) {
               )}
               <LessonTimer
                 key={selectedId}
-                minutes={selected?.durationMinutes || 50}
+                minutes={normalizedLessonMinutes(selected?.durationMinutes)}
               />
             </section>
           </div>
@@ -810,7 +811,7 @@ function TutorDashboard({ user }) {
   const [session, setSession] = useState({
     meetingUrl: "",
     lessonAt: "",
-    durationMinutes: 50
+    durationMinutes: 60
   });
 
   useEffect(() => {
@@ -856,7 +857,7 @@ function TutorDashboard({ user }) {
     setSession({
       meetingUrl: selected?.meetingUrl || "",
       lessonAt: toLocalInput(selected?.nextLessonAt),
-      durationMinutes: selected?.durationMinutes || 50
+      durationMinutes: normalizedLessonMinutes(selected?.durationMinutes)
     });
   }, [
     selectedId,
@@ -893,7 +894,7 @@ function TutorDashboard({ user }) {
         subject: newStudent.subject.trim(),
         meetingUrl: "",
         nextLessonAt: "",
-        durationMinutes: 50,
+        durationMinutes: 60,
         createdAt: serverTimestamp()
       });
 
@@ -1264,15 +1265,17 @@ function TutorDashboard({ user }) {
               </label>
 
               <label>
-                Planned minutes
+                Lesson duration
                 <select value={session.durationMinutes}
                   onChange={e => setSession({
                     ...session,
                     durationMinutes: Number(e.target.value)
                   })}>
-                  <option value="30">30 minutes</option>
-                  <option value="45">45 minutes</option>
-                  <option value="50">50 minutes</option>
+                  <option value="60">1 hour</option>
+                  <option value="90">1 hour 30 minutes</option>
+                  <option value="120">2 hours</option>
+                  <option value="150">2 hours 30 minutes</option>
+                  <option value="180">3 hours</option>
                 </select>
               </label>
 
