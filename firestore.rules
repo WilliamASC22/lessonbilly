@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isTutor() {
+      return signedIn() && request.auth.uid == "Yw2zbZef0lWUnq85M9hgGyBjpPj2";
+    }
+
+    function belongsToParent(studentId) {
+      return signedIn() &&
+        request.auth.uid in get(
+          /databases/$(database)/documents/students/$(studentId)
+        ).data.parentUids;
+    }
+
+    match /profiles/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid &&
+        request.resource.data.keys().hasOnly(['email', 'name', 'createdAt']) &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 80 &&
+        request.resource.data.createdAt == request.time;
+
+      allow get: if isTutor() || (signedIn() && request.auth.uid == uid);
+      allow list: if isTutor();
+      allow update, delete: if false;
+    }
+
+    match /students/{studentId} {
+      allow read: if isTutor() || (
+        signedIn() && request.auth.uid in resource.data.parentUids
+      );
+      allow create, update, delete: if isTutor();
+
+      match /grades/{gradeId} {
+        allow read: if isTutor() || (
+          belongsToParent(studentId) && resource.data.published == true
+        );
+        allow create, update, delete: if isTutor();
+      }
+    }
+
+    match /{everything=**} {
+      allow read, write: if false;
+    }
+  }
+}
