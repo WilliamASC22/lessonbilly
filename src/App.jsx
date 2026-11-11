@@ -882,16 +882,12 @@ function PortalAuthCard({ role, onSuccess }) {
 
       {isStudent && (
         <p className="student-account-note">
-          Student accounts must be connected to your student record
-          by the tutor after registration. For children under 13,
-          do not create an account until the required parental
-          notice and consent procedures are in place.
+          
         </p>
       )}
 
       {!isStudent && (
         <p className="student-account-note">
-          Tutors can also sign in through this panel.
         </p>
       )}
     </section>
