@@ -28,6 +28,7 @@ import {
   where
 } from "firebase/firestore";
 import { auth, db, TUTOR_UID } from "./firebase";
+import TutorGuide from "./TutorGuide.jsx";
 
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
 
@@ -1827,6 +1828,9 @@ function TutorDashboard({ user }) {
           {notice}
         </div>
       )}
+
+
+     <TutorGuide />
 
       <div className="metric-grid">
         <div className="metric">
