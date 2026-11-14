@@ -3,358 +3,297 @@ import { useState } from "react";
 import {
   BookOpenCheck,
   CheckCircle2,
-  ClipboardCopy,
-  HelpCircle,
-  Mail,
+  Copy,
   ShieldCheck
 } from "lucide-react";
 
 export default function TutorGuide() {
   const [copied, setCopied] = useState("");
-  const website = window.location.origin;
+  const site = window.location.origin;
 
-  const parentMessage = `Subject: Welcome to LessonBilly - Set up your parent account
-
-Hello,
-
-Welcome to LessonBilly! Please visit ${website} and follow these steps:
-
-1. Click Portal Login.
-2. Under Parent Sign In, click Create Parent Account.
-3. Register with the email address you shared with me.
-4. Open the Firebase verification email and verify your address.
-5. Sign in through Parent Sign In.
-
-Once I link your account to your child's record, you'll be able to see published grades, feedback, and upcoming lesson details. Please let me know once you've signed up.
-
-Thank you,
-LessonBilly`;
-
-  const studentMessage = `Subject: LessonBilly - Student portal instructions
-
-Hello,
-
-With your parent or guardian's assistance and approval, please visit ${website}.
-
-1. Click Portal Login.
-2. Under Student Sign In, click Create Student Account.
-3. Register using the student email address you provided to me.
-4. Verify the email using the link in your inbox.
-5. Return to Student Sign In and log in.
-
-Your tutor will link your student account to your learning record. Once connected, you'll be able to see published grades, feedback, and lesson links.
-
-Important: For children under 13, do not create a student account until LessonBilly has arranged the necessary parental notice and consent process. In the meantime, a parent can use their own account.
-
-Thank you,
-LessonBilly`;
-
-  const gradeMessage = `Subject: LessonBilly - New assessment result available
-
-Hello,
-
-A new assessment result is available in LessonBilly. Please visit ${website}, select Portal Login, and sign in to view the published grade and feedback.
-
-Please reach out if you have questions.
-
-Thank you,
-LessonBilly`;
-
-  async function copyMessage(key, message) {
-    try {
-      await navigator.clipboard.writeText(message);
-      setCopied(key);
-    } catch {
-      setCopied("failed");
-    }
-  }
-
-  const templates = [
+  const messages = [
     {
-      key: "parent",
-      title: "Parent onboarding email",
-      body: parentMessage
+      id: "parent",
+      title: "Parent welcome message",
+      body: `Subject: Welcome to LessonBilly\n\nHello,\n\nPlease open ${site}, choose Portal Login, then Create Parent Account on the right. Register with the email address you provided to me, verify your email, and sign back in.\n\nI will connect your account to your student's record. You will then be able to select each of their classes to view published grades, feedback, and upcoming lesson links.\n\nThank you,\nLessonBilly`
     },
     {
-      key: "student",
-      title: "Student onboarding email",
-      body: studentMessage
+      id: "student",
+      title: "Student welcome message",
+      body: `Subject: Your LessonBilly learning portal\n\nHello,\n\nWith your parent or guardian, visit ${site}, select Portal Login, then Create Student Account on the left. Verify your email and sign back in.\n\nI will link your account to your student record. After that, you can select your classes to see published scores and tutoring meeting links.\n\nStudent accounts for children under 13 should not be created until the required parental notice and consent process has been completed. Parents can use their own accounts in the meantime.\n\nThank you,\nLessonBilly`
     },
     {
-      key: "grades",
-      title: "Published grade notification",
-      body: gradeMessage
+      id: "grade",
+      title: "New grade message",
+      body: `Subject: LessonBilly - New grade available\n\nHello,\n\nA new assessment has been published in LessonBilly. Sign in at ${site}, select the student's class, and open Grade history to see the score and feedback.\n\nThank you,\nLessonBilly`
     }
   ];
 
+  async function copyMessage(item) {
+    try {
+      await navigator.clipboard.writeText(item.body);
+      setCopied(item.id);
+    } catch {
+      setCopied("error");
+    }
+  }
+
   return (
-    <section
-      className="panel lb-tutor-guide"
-      aria-label="Tutor instructions"
-    >
+    <section className="panel lb-guide">
       <style>{`
-        .lb-tutor-guide {
+        .lb-guide {
           margin-bottom: 26px;
         }
 
-        .lb-tutor-guide h2 {
+        .lb-guide h2 {
           display: flex;
           align-items: center;
-          gap: 9px;
+          gap: 10px;
           font-size: 20px;
-          margin: 0 0 8px;
+          margin: 0 0 10px;
         }
 
-        .lb-tutor-guide .lb-guide-intro {
-          font-size: 14px;
-          margin-bottom: 14px;
-        }
-
-        .lb-tutor-guide details {
-          border: 1px solid #e3e9f6;
+        .lb-guide details {
+          border: 1px solid #e2e9f7;
           border-radius: 12px;
-          margin: 12px 0;
+          margin-top: 11px;
           overflow: hidden;
-          background: #fff;
         }
 
-        .lb-tutor-guide summary {
+        .lb-guide summary {
           cursor: pointer;
           padding: 15px 17px;
-          font-size: 14px;
+          background: #f5f8ff;
           font-weight: 800;
           color: #24385f;
-          background: #f7f9ff;
-        }
-
-        .lb-tutor-guide .lb-guide-content {
-          padding: 16px 19px 18px;
-        }
-
-        .lb-tutor-guide ol {
-          margin: 0;
-          padding-left: 23px;
-        }
-
-        .lb-tutor-guide li {
-          margin: 9px 0;
-          line-height: 1.6;
           font-size: 14px;
-          color: #4b5e7b;
         }
 
-        .lb-tutor-guide li strong {
-          color: #213250;
+        .lb-guide .lb-guide-body {
+          padding: 17px 19px;
         }
 
-        .lb-tutor-guide .lb-guide-help {
-          margin: 13px 0 0;
-          font-size: 13px;
+        .lb-guide ol {
+          margin: 0;
+          padding-left: 22px;
+        }
+
+        .lb-guide li {
+          margin-bottom: 9px;
+          color: #536480;
+          font-size: 14px;
           line-height: 1.65;
-          color: #596b85;
         }
 
-        .lb-tutor-guide .lb-guide-warning {
+        .lb-guide li:last-child {
+          margin-bottom: 0;
+        }
+
+        .lb-guide .lb-guide-note {
           background: #fff7e8;
-          border: 1px solid #f1dfb8;
-          padding: 12px;
           border-radius: 9px;
+          padding: 12px;
+          margin: 14px 0 0;
+          font-size: 13px;
+          color: #76551d;
         }
 
-        .lb-tutor-guide .lb-template {
-          padding: 12px 0;
-          border-top: 1px solid #eef1f7;
+        .lb-guide .lb-copy {
+          border: 1px solid #9db4f2;
+          border-radius: 9px;
+          background: #eef3ff;
+          color: #345bc7;
+          padding: 9px 12px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-weight: 800;
         }
 
-        .lb-tutor-guide .lb-template:first-child {
-          border-top: none;
-          padding-top: 0;
+        .lb-guide .lb-message {
+          padding: 14px 0;
+          border-bottom: 1px solid #e9edf5;
         }
 
-        .lb-tutor-guide .lb-template-top {
+        .lb-guide .lb-message:last-child {
+          border: 0;
+        }
+
+        .lb-guide .lb-message-head {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           flex-wrap: wrap;
         }
 
-        .lb-tutor-guide .lb-template strong {
-          font-size: 14px;
-        }
-
-        .lb-tutor-guide .lb-template pre {
-          padding: 12px;
-          max-height: 190px;
-          overflow: auto;
+        .lb-guide pre {
+          background: #f6f8fc;
+          border-radius: 9px;
+          padding: 13px;
           white-space: pre-wrap;
           overflow-wrap: anywhere;
-          background: #f7f9fc;
-          border-radius: 9px;
-          font-size: 12px;
-          line-height: 1.6;
           font-family: inherit;
-          margin: 11px 0 0;
-        }
-
-        .lb-tutor-guide .lb-copy {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 12px;
-          border: 1px solid #bdcdf9;
-          border-radius: 9px;
-          background: #ebf1ff;
-          color: #345ed3;
+          line-height: 1.6;
           font-size: 12px;
-          font-weight: 800;
+          max-height: 220px;
+          overflow: auto;
+          margin: 12px 0 0;
         }
       `}</style>
 
       <h2>
-        <BookOpenCheck size={22} color="#466cde" />
+        <BookOpenCheck size={23} color="#466cde" />
         Tutor Guide - How to use LessonBilly
       </h2>
 
-      <p className="lb-guide-intro">
-        Step-by-step instructions for enrolling families,
-        linking student accounts, publishing grades, and
-        scheduling lessons. Expand a section when you need it.
+      <p className="muted">
+        Open a section for instructions. The guide is
+        visible only in your tutor dashboard.
       </p>
 
       <details>
-        <summary>1. Enroll a new family</summary>
+        <summary>
+          1. Enroll a student and connect their accounts
+        </summary>
 
-        <div className="lb-guide-content">
+        <div className="lb-guide-body">
           <ol>
             <li>
-              <strong>Ask the parent to register first.</strong>{" "}
-              Send the parent onboarding email below. They
-              select Portal Login, then Parent Sign In,
-              create an account, and verify their email.
+              Ask a parent to create a Parent Account
+              and verify their email.
             </li>
 
             <li>
-              <strong>Confirm the registered email.</strong>{" "}
-              In your tutor dashboard, the parent's email
-              must match their LessonBilly account email.
-              An account must have a Firestore profile to
-              appear in the Registered accounts count.
-            </li>
-
-            <li>
-              <strong>Add the learner.</strong>{" "}
               In Add a student, enter the student's name,
               the parent's registered email, grade level,
-              and subject, then click Add student.
+              and first class (such as Math).
             </li>
 
             <li>
-              <strong>Student login is optional.</strong>{" "}
-              If a student account has been appropriately
-              created and verified, enter their registered
-              email when adding the student or link it
-              afterward under Student account access.
+              Optionally link an approved, verified
+              student account now or afterward in
+              Student account access.
             </li>
 
             <li>
-              <strong>Test access.</strong>{" "}
-              Have the parent log in. The family should
-              see only the student's assigned record;
-              published grades appear after you publish them.
+              Have the parent and student sign in
+              separately to check that they see only
+              their assigned records.
             </li>
           </ol>
 
-          <p className="lb-guide-help lb-guide-warning">
-            <ShieldCheck
-              size={15}
-              style={{ verticalAlign: "middle" }}
-            />{" "}
-            For children under 13, do not invite independent
-            student registration until the necessary parental
-            notice and consent process exists. A checkbox
-            alone is not sufficient. Parent accounts can
-            be used in the meantime.
+          <p className="lb-guide-note">
+            <ShieldCheck size={15} /> For children
+            under 13, don't invite independent
+            registration without the required parental
+            notice and consent process. A checkbox alone
+            does not establish consent.
           </p>
         </div>
       </details>
 
       <details>
         <summary>
-          2. Link a student login to an existing student record
+          2. Update a student's grade level
         </summary>
 
-        <div className="lb-guide-content">
+        <div className="lb-guide-body">
           <ol>
             <li>
-              Ask the student and guardian to complete the
-              approved student registration process and
-              verify the email.
+              Under Your students, select the student.
             </li>
 
             <li>
-              Under <strong>Your students</strong>, click
-              the correct student's name.
+              Open Student details and classes.
             </li>
 
             <li>
-              Open <strong>Student account access</strong>,
-              enter the student's exact registered email,
-              and click <strong>Save student access</strong>.
+              Change Student grade level (for example,
+              Grade 8 to Grade 9).
             </li>
 
             <li>
-              Ask the student to sign in through{" "}
-              <strong>Student Sign In</strong> and verify
-              that their published grades and lesson
-              details appear.
+              Click Save grade level. Their existing
+              classes and grades will remain intact.
+            </li>
+          </ol>
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          3. Add another class, rename a class, or switch classes
+        </summary>
+
+        <div className="lb-guide-body">
+          <ol>
+            <li>
+              Select a student under Your students.
+            </li>
+
+            <li>
+              In Student details and classes, type the
+              new subject in Add another class and click
+              Add class.
+            </li>
+
+            <li>
+              Use the class buttons to switch between
+              subjects such as Math and English.
+            </li>
+
+            <li>
+              To change the selected class name, edit
+              Rename selected class and click Rename class.
+            </li>
+
+            <li>
+              Grades and scheduled lessons below belong
+              to whichever class is selected. Parents
+              and students can switch classes from their
+              own dashboards too.
             </li>
           </ol>
 
-          <p className="lb-guide-help">
-            Do not type another student's email into this
-            field. Leaving it empty and clicking Save
-            student access unlinks the existing student login.
+          <p className="muted tiny">
+            Older student records are displayed as one
+            original class automatically. This update
+            does not delete old assessments.
           </p>
         </div>
       </details>
 
       <details>
         <summary>
-          3. Publish assessment results and notify families
+          4. Save and publish a class assessment
         </summary>
 
-        <div className="lb-guide-content">
+        <div className="lb-guide-body">
           <ol>
             <li>
-              Select the correct student.
+              Select the student and then the correct class.
             </li>
 
             <li>
-              Under <strong>Add an assessment</strong>,
-              enter the assessment name, points earned,
-              total possible points, and optional feedback.
+              In Add an assessment, enter the title,
+              points earned, possible points, and
+              optional feedback.
             </li>
 
             <li>
-              Click <strong>Save draft grade</strong>.
-              Drafts are visible only to the tutor.
+              Click Save draft grade. Only you can see
+              a draft.
             </li>
 
             <li>
-              Check the details, then click{" "}
-              <strong>Publish</strong> in Assessment
-              history. Published scores appear in linked
-              student and parent dashboards.
+              Check the score, then click Publish in
+              the selected class's assessment history.
             </li>
 
             <li>
-              Click <strong>Email parent</strong> or use
-              the message template below.{" "}
-              <strong>
-                LessonBilly does not send grade
-                notifications automatically.
-              </strong>
+              Use Email parent or copy the grade message
+              below to notify the family manually.
             </li>
           </ol>
         </div>
@@ -362,94 +301,78 @@ LessonBilly`;
 
       <details>
         <summary>
-          4. Schedule a lesson and share the meeting link
+          5. Schedule each class's tutoring session
         </summary>
 
-        <div className="lb-guide-content">
+        <div className="lb-guide-body">
           <ol>
             <li>
-              Create a Google Meet meeting using your
-              own Google account.
+              Select the student, then select the
+              relevant class.
             </li>
 
             <li>
-              Select the learner in your tutor dashboard.
+              Create a Google Meet link using your
+              own account.
             </li>
 
             <li>
-              In <strong>Upcoming lesson</strong>, paste
-              the Meet URL, select the date/time and lesson
-              duration (1 to 3 hours), then click{" "}
-              <strong>Save lesson</strong>.
+              Enter the Meet link, lesson date and
+              time, and duration (1 to 3 hours).
             </li>
 
             <li>
-              Tell the family to open LessonBilly and
-              select <strong>Join Google Meet</strong>{" "}
-              from their dashboard when it's time for
-              the lesson.
-            </li>
-
-            <li>
-              Record separately using OBS only after
-              securing appropriate permission. LessonBilly
-              does not store video recordings or control
-              the Google Meet call length.
+              Click Save lesson. The link appears
+              under that class for the linked parent
+              and student.
             </li>
           </ol>
+
+          <p className="muted tiny">
+            LessonBilly does not record or automatically
+            end Google Meet sessions. Obtain appropriate
+            recording consent if you use separate
+            recording software.
+          </p>
         </div>
       </details>
 
       <details>
         <summary>
-          5. Messages you can copy and send to clients
+          6. Copy messages for parents and students
         </summary>
 
-        <div className="lb-guide-content">
-          {templates.map(template => (
-            <div
-              className="lb-template"
-              key={template.key}
-            >
-              <div className="lb-template-top">
-                <strong>
-                  <Mail
-                    size={15}
-                    style={{ verticalAlign: "middle" }}
-                  />{" "}
-                  {template.title}
-                </strong>
+        <div className="lb-guide-body">
+          {messages.map(item => (
+            <div className="lb-message" key={item.id}>
+              <div className="lb-message-head">
+                <strong>{item.title}</strong>
 
                 <button
                   className="lb-copy"
                   type="button"
-                  onClick={() =>
-                    copyMessage(
-                      template.key,
-                      template.body
-                    )
-                  }
+                  onClick={() => copyMessage(item)}
                 >
-                  {copied === template.key ? (
+                  {copied === item.id ? (
                     <CheckCircle2 size={16} />
                   ) : (
-                    <ClipboardCopy size={16} />
+                    <Copy size={16} />
                   )}
 
-                  {copied === template.key
+                  {copied === item.id
                     ? "Copied"
                     : "Copy message"}
                 </button>
               </div>
 
-              <pre>{template.body}</pre>
+              <pre>{item.body}</pre>
             </div>
           ))}
 
-          {copied === "failed" && (
-            <p className="lb-guide-help">
-              Clipboard access was blocked. You can select
-              and copy the message text manually.
+          {copied === "error" && (
+            <p className="muted">
+              Clipboard unavailable. Select and copy
+              the message manually.
             </p>
           )}
         </div>
@@ -457,65 +380,39 @@ LessonBilly`;
 
       <details>
         <summary>
-          6. Fix common account and linking problems
+          7. Fix account-linking and permission errors
         </summary>
 
-        <div className="lb-guide-content">
+        <div className="lb-guide-body">
           <ol>
             <li>
-              <strong>
-                "No student profile found with that email":
-              </strong>{" "}
-              Confirm that the student registered through
-              Student Sign In and verified their email.
-              Then check Firebase Console &gt; Firestore
-              &gt; Data &gt; profiles for a document with
-              their Firebase Authentication UID and{" "}
-              <code>role: "student"</code>.
+              If a student profile cannot be found,
+              confirm they used Student Sign In,
+              verified their email, and have a Firestore
+              profiles document with role set to student.
             </li>
 
             <li>
-              <strong>
-                Account is verified but no profile exists:
-              </strong>{" "}
-              This can happen if registration was attempted
-              while old Firestore rules were published.
-              Repair the test account profile with the
-              exact UID and role before linking; do not
-              loosen security rules.
+              If a parent account cannot be found,
+              confirm the parent registered, verified
+              their email, and used the same email you
+              entered.
             </li>
 
             <li>
-              <strong>Parent account not found:</strong>{" "}
-              The parent must first register, verify
-              their email, and have a matching profile.
-              Use the same email in Add a student.
+              If an account cannot see a grade, confirm
+              that you linked the correct account,
+              selected the correct class, and clicked
+              Publish.
             </li>
 
             <li>
-              <strong>Student sees no grades:</strong>{" "}
-              Confirm you linked the correct student
-              account and clicked Publish for the
-              assessment. Draft grades are hidden.
-            </li>
-
-            <li>
-              <strong>Firebase permission denied:</strong>{" "}
-              Check that the latest{" "}
-              <code>firestore.rules</code> were published
-              in Firebase and that the tutor UID matches
-              your actual Firebase account UID.
+              If Firebase denies access, check your
+              published Firestore rules and confirm
+              the full tutor UID matches the value
+              in firebase.js.
             </li>
           </ol>
-
-          <p className="lb-guide-help">
-            <HelpCircle
-              size={15}
-              style={{ verticalAlign: "middle" }}
-            />{" "}
-            Test using fictional accounts before entering
-            real children's names, grades, or meeting details.
-          </p>
         </div>
       </details>
     </section>

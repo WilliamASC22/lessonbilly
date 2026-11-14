@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronRight,
   GraduationCap, LockKeyhole, Mail, Menu,
-  Plus, ShieldCheck, Sparkles, Star, TrendingUp, Users, Video,
-  X, LogOut, PencilLine, Send
+  Plus, ShieldCheck, Sparkles, Star, TrendingUp,
+  Users, Video, X, LogOut, PencilLine, Send
 } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
@@ -16,16 +17,8 @@ import {
   updateProfile
 } from "firebase/auth";
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where
+  addDoc, collection, doc, getDoc, onSnapshot,
+  query, serverTimestamp, setDoc, updateDoc, where
 } from "firebase/firestore";
 import { auth, db, TUTOR_UID } from "./firebase";
 import TutorGuide from "./TutorGuide.jsx";
@@ -96,10 +89,7 @@ function formatDate(value) {
 
 function normalizedLessonMinutes(value) {
   const minutes = Number(value);
-
-  return [60, 90, 120, 150, 180].includes(minutes)
-    ? minutes
-    : 60;
+  return [60, 90, 120, 150, 180].includes(minutes) ? minutes : 60;
 }
 
 function formatLessonDuration(value) {
@@ -116,7 +106,6 @@ function toLocalInput(iso) {
   if (!iso) return "";
 
   const date = new Date(iso);
-
   if (Number.isNaN(date.getTime())) return "";
 
   const pad = number => String(number).padStart(2, "0");
@@ -315,11 +304,9 @@ function Home({ setPage }) {
               <span>
                 <CheckCircle2 size={17} /> 100% online
               </span>
-
               <span>
                 <CheckCircle2 size={17} /> Personal attention
               </span>
-
               <span>
                 <CheckCircle2 size={17} /> Progress tracking
               </span>
@@ -403,7 +390,6 @@ function Home({ setPage }) {
 
             <div className="floating-note">
               <span>✦</span>
-
               <div>
                 <b>Keep going!</b>
                 <small>Your effort is paying off.</small>
@@ -419,12 +405,10 @@ function Home({ setPage }) {
             <ShieldCheck size={20} />
             Private student and parent portals
           </span>
-
           <span>
             <Video size={20} />
             Convenient online lessons
           </span>
-
           <span>
             <TrendingUp size={20} />
             Track improvement over time
@@ -446,10 +430,7 @@ function Home({ setPage }) {
             {subjects.map(({ icon: Icon, title, text }, i) => (
               <motion.article
                 {...fadeIn}
-                transition={{
-                  duration: 0.5,
-                  delay: i * 0.1
-                }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="subject-card"
                 key={title}
               >
@@ -476,12 +457,8 @@ function Home({ setPage }) {
       <section className="section soft-section" id="how-it-works">
         <div className="shell">
           <motion.div {...fadeIn} className="section-intro">
-            <span className="section-kicker">
-              SIMPLE FROM DAY ONE
-            </span>
-
+            <span className="section-kicker">SIMPLE FROM DAY ONE</span>
             <h2>How LessonBilly works</h2>
-
             <p>
               Stay focused on learning, not complicated technology.
             </p>
@@ -525,7 +502,6 @@ function Home({ setPage }) {
             <span className="section-kicker">
               STRAIGHTFORWARD PRICING
             </span>
-
             <h2>Great tutoring. Clear pricing.</h2>
 
             <p className="pricing-lead">
@@ -537,12 +513,10 @@ function Home({ setPage }) {
               <CheckCircle2 size={20} />
               One-on-one remote tutoring
             </div>
-
             <div className="pricing-point">
               <CheckCircle2 size={20} />
               Parent access to published grades
             </div>
-
             <div className="pricing-point">
               <CheckCircle2 size={20} />
               No required long-term contract
@@ -561,9 +535,7 @@ function Home({ setPage }) {
 
             <div className="price-divider" />
 
-            <p>
-              Recommended: 2 hours per week, per subject
-            </p>
+            <p>Recommended: 2 hours per week, per subject</p>
 
             <div className="price-summary">
               <span>Estimated weekly cost (2 hours)</span>
@@ -589,10 +561,7 @@ function Home({ setPage }) {
       <section className="section soft-section" id="about">
         <div className="shell pricing-layout">
           <motion.div {...fadeIn}>
-            <span className="section-kicker">
-              ABOUT LESSONBILLY
-            </span>
-
+            <span className="section-kicker">ABOUT LESSONBILLY</span>
             <h2>Patient teaching. Clear progress.</h2>
 
             <p>
@@ -612,12 +581,10 @@ function Home({ setPage }) {
               <ShieldCheck size={20} />
               Private student and parent dashboards
             </div>
-
             <div className="pricing-point">
               <BookOpen size={20} />
               Lessons tailored to the student
             </div>
-
             <div className="pricing-point">
               <TrendingUp size={20} />
               Visible assessment updates
@@ -627,12 +594,8 @@ function Home({ setPage }) {
       </section>
 
       <section className="section cta-section">
-        <motion.div
-          {...fadeIn}
-          className="shell cta-content"
-        >
+        <motion.div {...fadeIn} className="shell cta-content">
           <Sparkles size={26} />
-
           <h2>Ready to make learning click?</h2>
 
           <p>
@@ -694,8 +657,6 @@ function PortalAuthCard({ role, onSuccess }) {
           displayName: name.trim()
         });
 
-        // Save role during registration.
-        // The Firestore rules restrict this profile to its owner.
         await setDoc(
           doc(db, "profiles", result.user.uid),
           {
@@ -707,7 +668,6 @@ function PortalAuthCard({ role, onSuccess }) {
         );
 
         await sendEmailVerification(result.user);
-
         onSuccess();
       } else {
         const result = await signInWithEmailAndPassword(
@@ -830,7 +790,6 @@ function PortalAuthCard({ role, onSuccess }) {
                 setGuardianApproved(e.target.checked)
               }
             />
-
             <span>
               A parent or guardian approves this student account.
             </span>
@@ -847,7 +806,6 @@ function PortalAuthCard({ role, onSuccess }) {
             : register
               ? "Create account"
               : "Sign in"}
-
           <ArrowRight size={17} />
         </button>
       </form>
@@ -876,21 +834,9 @@ function PortalAuthCard({ role, onSuccess }) {
           {register
             ? "Back to sign in"
             : `Create ${isStudent ? "Student" : "Parent"} Account`}
-
           <ArrowRight size={17} />
         </button>
       </div>
-
-      {isStudent && (
-        <p className="student-account-note">
-          
-        </p>
-      )}
-
-      {!isStudent && (
-        <p className="student-account-note">
-        </p>
-      )}
     </section>
   );
 }
@@ -906,16 +852,13 @@ function AuthScreen({ onSuccess }) {
           align-items: start;
           max-width: 1050px;
         }
-
         .portal-auth-card {
           height: 100%;
           min-width: 0;
         }
-
         .portal-auth-card h2 {
           font-size: 26px;
         }
-
         .create-account-area {
           margin-top: 23px;
           padding-top: 20px;
@@ -925,14 +868,12 @@ function AuthScreen({ onSuccess }) {
           gap: 11px;
           align-items: stretch;
         }
-
         .create-account-area span {
           font-size: 13px;
           text-align: center;
           font-weight: 700;
           color: #53627e;
         }
-
         .create-account-button {
           background: #edf2ff !important;
           color: #345bc7 !important;
@@ -940,18 +881,9 @@ function AuthScreen({ onSuccess }) {
           box-shadow: none !important;
           white-space: normal !important;
         }
-
         .create-account-button:hover {
           background: #e0e9ff !important;
         }
-
-        .student-account-note {
-          margin: 17px 0 0 !important;
-          color: #7a8aa5;
-          font-size: 12px !important;
-          line-height: 1.6;
-        }
-
         .guardian-confirm {
           flex-direction: row !important;
           align-items: flex-start;
@@ -959,19 +891,16 @@ function AuthScreen({ onSuccess }) {
           font-weight: 500 !important;
           line-height: 1.5;
         }
-
         .guardian-confirm input {
           width: auto !important;
           margin-top: 3px;
           flex-shrink: 0;
         }
-
         @media (max-width: 800px) {
           .portal-auth-grid {
             grid-template-columns: 1fr;
             max-width: 550px;
           }
-
           .portal-auth-card {
             height: auto;
           }
@@ -1008,7 +937,6 @@ function AuthScreen({ onSuccess }) {
           role="student"
           onSuccess={onSuccess}
         />
-
         <PortalAuthCard
           role="parent"
           onSuccess={onSuccess}
@@ -1051,7 +979,6 @@ function VerificationScreen({ user, onVerified }) {
 
     try {
       await sendEmailVerification(user);
-
       setMessage(
         "Verification email sent. Check your inbox and spam folder."
       );
@@ -1067,7 +994,6 @@ function VerificationScreen({ user, onVerified }) {
       <div className="shell verify-wrap">
         <div className="auth-card">
           <Mail className="verify-symbol" size={34} />
-
           <h2>Verify your email</h2>
 
           <p>
@@ -1122,7 +1048,6 @@ function GradeList({ grades, tutor = false, onPublish }) {
 
           <div className="grade-description">
             <strong>{g.title}</strong>
-
             <small>
               {g.earned} / {g.possible} points
               {g.feedback ? ` · ${g.feedback}` : ""}
@@ -1147,6 +1072,54 @@ function GradeList({ grades, tutor = false, onPublish }) {
   );
 }
 
+// One student record can contain multiple classes.
+// Older student records did not have a classes array.
+// Their original subject and meeting are displayed automatically.
+function classesForStudent(student) {
+  if (!student) return [];
+
+  if (Array.isArray(student.classes) && student.classes.length) {
+    return student.classes
+      .filter(
+        c =>
+          c &&
+          typeof c.id === "string" &&
+          typeof c.name === "string"
+      )
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        meetingUrl:
+          c.meetingUrl ??
+          (c.id === "original" ? student.meetingUrl || "" : ""),
+        nextLessonAt:
+          c.nextLessonAt ??
+          (c.id === "original" ? student.nextLessonAt || "" : ""),
+        durationMinutes: normalizedLessonMinutes(
+          c.durationMinutes ??
+          (c.id === "original" ? student.durationMinutes : 60)
+        )
+      }));
+  }
+
+  return [
+    {
+      id: "original",
+      name: student.subject || "General tutoring",
+      meetingUrl: student.meetingUrl || "",
+      nextLessonAt: student.nextLessonAt || "",
+      durationMinutes: normalizedLessonMinutes(
+        student.durationMinutes
+      )
+    }
+  ];
+}
+
+// Old grades without a classId belong to the original class.
+function gradeClassId(grade) {
+  return grade.classId || "original";
+}
+
 function StudentTabs({ students, selectedId, setSelectedId }) {
   if (!students.length) return null;
 
@@ -1168,6 +1141,7 @@ function StudentTabs({ students, selectedId, setSelectedId }) {
 function LearnerDashboard({ user, role }) {
   const [students, setStudents] = useState([]);
   const [selectedId, setSelectedId] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [grades, setGrades] = useState([]);
   const [error, setError] = useState("");
 
@@ -1196,8 +1170,9 @@ function LearnerDashboard({ user, role }) {
   }, [user.uid, role]);
 
   useEffect(() => {
-    if (!students.find(s => s.id === selectedId)) {
+    if (!students.some(s => s.id === selectedId)) {
       setSelectedId(students[0]?.id || "");
+      setSelectedClassId("");
     }
   }, [students, selectedId]);
 
@@ -1227,11 +1202,18 @@ function LearnerDashboard({ user, role }) {
   }, [selectedId]);
 
   const selected = students.find(s => s.id === selectedId);
+  const classes = classesForStudent(selected);
+  const currentClass =
+    classes.find(c => c.id === selectedClassId) || classes[0];
 
-  const sum = grades.reduce(
+  const classGrades = grades.filter(
+    g => gradeClassId(g) === currentClass?.id
+  );
+
+  const totals = classGrades.reduce(
     (acc, g) => ({
-      earned: acc.earned + g.earned,
-      possible: acc.possible + g.possible
+      earned: acc.earned + Number(g.earned || 0),
+      possible: acc.possible + Number(g.possible || 0)
     }),
     { earned: 0, possible: 0 }
   );
@@ -1259,8 +1241,7 @@ function LearnerDashboard({ user, role }) {
         </div>
 
         <div className="secure-chip">
-          <LockKeyhole size={16} />
-          Private access
+          <LockKeyhole size={16} /> Private access
         </div>
       </div>
 
@@ -1269,7 +1250,6 @@ function LearnerDashboard({ user, role }) {
       {!students.length ? (
         <div className="panel empty-panel">
           <Users size={35} />
-
           <h2>Your account is ready.</h2>
 
           <p>
@@ -1287,39 +1267,72 @@ function LearnerDashboard({ user, role }) {
           <StudentTabs
             students={students}
             selectedId={selectedId}
-            setSelectedId={setSelectedId}
+            setSelectedId={id => {
+              setSelectedId(id);
+              setSelectedClassId("");
+            }}
           />
+
+          <section
+            className="panel"
+            style={{ marginBottom: 22 }}
+          >
+            <div className="panel-heading">
+              <h2>Classes</h2>
+            </div>
+
+            <div
+              className="student-tabs"
+              style={{ marginBottom: 0 }}
+            >
+              {classes.map(c => (
+                <button
+                  key={c.id}
+                  className={
+                    c.id === currentClass?.id
+                      ? "selected"
+                      : ""
+                  }
+                  onClick={() => setSelectedClassId(c.id)}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
+            <p
+              className="muted tiny"
+              style={{ marginBottom: 0 }}
+            >
+              Grade level: {selected?.gradeLevel || "Not set"}.
+              Choose a class to view its scores and lesson link.
+            </p>
+          </section>
 
           <div className="metric-grid">
             <div className="metric">
               <small>Published assessments</small>
-              <strong>{grades.length}</strong>
-              <span>View all results below</span>
+              <strong>{classGrades.length}</strong>
+              <span>For {currentClass?.name}</span>
             </div>
 
             <div className="metric">
-              <small>Overall score</small>
-
+              <small>Class score</small>
               <strong>
-                {sum.possible
+                {totals.possible
                   ? `${Math.round(
-                      (sum.earned / sum.possible) * 100
+                      totals.earned / totals.possible * 100
                     )}%`
                   : "-"}
               </strong>
-
-              <span>
-                Points earned across assessments
-              </span>
+              <span>Based on points in this class</span>
             </div>
 
             <div className="metric">
-              <small>Subject</small>
-
+              <small>Selected class</small>
               <strong className="metric-subject">
-                {selected?.subject || "-"}
+                {currentClass?.name || "-"}
               </strong>
-
               <span>
                 {selected?.gradeLevel || "Learning support"}
               </span>
@@ -1329,35 +1342,37 @@ function LearnerDashboard({ user, role }) {
           <div className="dashboard-grid">
             <section className="panel">
               <div className="panel-heading">
-                <h2>Grade history</h2>
-
+                <h2>
+                  {currentClass?.name} - Grade history
+                </h2>
                 <span className="chip">
                   Published only
                 </span>
               </div>
-
-              <GradeList grades={grades} />
+              <GradeList grades={classGrades} />
             </section>
 
             <section className="panel">
               <div className="panel-heading">
-                <h2>Next tutoring session</h2>
+                <h2>
+                  Next {currentClass?.name} lesson
+                </h2>
               </div>
 
               <p className="schedule-date">
-                {formatDate(selected?.nextLessonAt)}
+                {formatDate(currentClass?.nextLessonAt)}
               </p>
 
               <p className="muted">
                 {formatLessonDuration(
-                  selected?.durationMinutes
+                  currentClass?.durationMinutes
                 )} planned session
               </p>
 
-              {selected?.meetingUrl ? (
+              {currentClass?.meetingUrl ? (
                 <a
                   className="button button-full"
-                  href={selected.meetingUrl}
+                  href={currentClass.meetingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -1365,7 +1380,8 @@ function LearnerDashboard({ user, role }) {
                 </a>
               ) : (
                 <div className="empty-small">
-                  Your tutor hasn't provided a meeting link.
+                  Your tutor hasn't provided a meeting link
+                  for this class.
                 </div>
               )}
             </section>
@@ -1407,6 +1423,10 @@ function TutorDashboard({ user }) {
 
   const [studentEmail, setStudentEmail] = useState("");
   const [linkEmail, setLinkEmail] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [gradeLevelEdit, setGradeLevelEdit] = useState("");
+  const [newClassName, setNewClassName] = useState("");
+  const [classNameEdit, setClassNameEdit] = useState("");
 
   useEffect(() => {
     const unsubStudents = onSnapshot(
@@ -1467,37 +1487,189 @@ function TutorDashboard({ user }) {
     );
   }, [selectedId]);
 
-  const selected = students.find(
-    s => s.id === selectedId
-  );
+  const selected = students.find(s => s.id === selectedId);
+  const classes = classesForStudent(selected);
+
+  const currentClass =
+    classes.find(c => c.id === selectedClassId) || classes[0];
+
+  useEffect(() => {
+    setGradeLevelEdit(selected?.gradeLevel || "");
+  }, [selectedId, selected?.gradeLevel]);
+
+  useEffect(() => {
+    setClassNameEdit(currentClass?.name || "");
+  }, [
+    selectedId,
+    currentClass?.id,
+    currentClass?.name
+  ]);
 
   useEffect(() => {
     setSession({
-      meetingUrl: selected?.meetingUrl || "",
-      lessonAt: toLocalInput(selected?.nextLessonAt),
+      meetingUrl: currentClass?.meetingUrl || "",
+      lessonAt: toLocalInput(currentClass?.nextLessonAt),
       durationMinutes: normalizedLessonMinutes(
-        selected?.durationMinutes
+        currentClass?.durationMinutes
       )
     });
   }, [
     selectedId,
-    selected?.meetingUrl,
-    selected?.nextLessonAt,
-    selected?.durationMinutes
+    currentClass?.id,
+    currentClass?.meetingUrl,
+    currentClass?.nextLessonAt,
+    currentClass?.durationMinutes
   ]);
 
   useEffect(() => {
     setLinkEmail(selected?.studentEmail || "");
-  }, [
-    selectedId,
-    selected?.studentEmail
-  ]);
+  }, [selectedId, selected?.studentEmail]);
 
-  const sortedGrades = [...grades].sort(
-    (a, b) =>
-      (b.createdAt?.seconds || 0) -
-      (a.createdAt?.seconds || 0)
-  );
+  // Existing grades without classId remain in the original class.
+  const sortedGrades = grades
+    .filter(g => gradeClassId(g) === currentClass?.id)
+    .sort(
+      (a, b) =>
+        (b.createdAt?.seconds || 0) -
+        (a.createdAt?.seconds || 0)
+    );
+
+  async function saveGradeLevel(event) {
+    event.preventDefault();
+    if (!selected) return;
+
+    setError("");
+    setNotice("");
+    setBusy(true);
+
+    try {
+      const level = gradeLevelEdit.trim();
+
+      if (!level || level.length > 30) {
+        throw new Error(
+          "Enter a grade level of 1 to 30 characters."
+        );
+      }
+
+      await updateDoc(
+        doc(db, "students", selected.id),
+        { gradeLevel: level }
+      );
+
+      setNotice(
+        `Updated ${selected.name}'s grade level to ${level}.`
+      );
+    } catch (e) {
+      setError(readableError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addClass(event) {
+    event.preventDefault();
+    if (!selected) return;
+
+    setError("");
+    setNotice("");
+    setBusy(true);
+
+    try {
+      const name = newClassName.trim();
+
+      if (!name || name.length > 60) {
+        throw new Error(
+          "Enter a class name of 1 to 60 characters."
+        );
+      }
+
+      if (
+        classes.some(
+          c => c.name.toLowerCase() === name.toLowerCase()
+        )
+      ) {
+        throw new Error(
+          "This student already has a class with that name."
+        );
+      }
+
+      const id = doc(collection(db, "students")).id;
+
+      await updateDoc(
+        doc(db, "students", selected.id),
+        {
+          classes: [
+            ...classes,
+            {
+              id,
+              name,
+              meetingUrl: "",
+              nextLessonAt: "",
+              durationMinutes: 60
+            }
+          ]
+        }
+      );
+
+      setSelectedClassId(id);
+      setNewClassName("");
+      setNotice(`${name} added for ${selected.name}.`);
+    } catch (e) {
+      setError(readableError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function renameClass(event) {
+    event.preventDefault();
+    if (!selected || !currentClass) return;
+
+    setError("");
+    setNotice("");
+    setBusy(true);
+
+    try {
+      const name = classNameEdit.trim();
+
+      if (!name || name.length > 60) {
+        throw new Error(
+          "Enter a class name of 1 to 60 characters."
+        );
+      }
+
+      if (
+        classes.some(
+          c =>
+            c.id !== currentClass.id &&
+            c.name.toLowerCase() === name.toLowerCase()
+        )
+      ) {
+        throw new Error(
+          "This student already has a class with that name."
+        );
+      }
+
+      await updateDoc(
+        doc(db, "students", selected.id),
+        {
+          classes: classes.map(c =>
+            c.id === currentClass.id
+              ? { ...c, name }
+              : c
+          )
+        }
+      );
+
+      setNotice(
+        `Class renamed to ${name}. Existing grades are preserved.`
+      );
+    } catch (e) {
+      setError(readableError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function createStudent(event) {
     event.preventDefault();
@@ -1550,6 +1722,15 @@ function TutorDashboard({ user }) {
             registeredStudent?.email || "",
           gradeLevel: newStudent.gradeLevel.trim(),
           subject: newStudent.subject.trim(),
+          classes: [
+            {
+              id: "original",
+              name: newStudent.subject.trim(),
+              meetingUrl: "",
+              nextLessonAt: "",
+              durationMinutes: 60
+            }
+          ],
           meetingUrl: "",
           nextLessonAt: "",
           durationMinutes: 60,
@@ -1558,6 +1739,7 @@ function TutorDashboard({ user }) {
       );
 
       setSelectedId(ref.id);
+      setSelectedClassId("");
       setStudentEmail("");
 
       setNewStudent({
@@ -1579,6 +1761,7 @@ function TutorDashboard({ user }) {
 
   async function linkStudentAccount(event) {
     event.preventDefault();
+    if (!selected) return;
 
     setError("");
     setNotice("");
@@ -1589,7 +1772,7 @@ function TutorDashboard({ user }) {
 
       if (!email) {
         await updateDoc(
-          doc(db, "students", selectedId),
+          doc(db, "students", selected.id),
           {
             studentUids: [],
             studentEmail: ""
@@ -1611,7 +1794,7 @@ function TutorDashboard({ user }) {
         }
 
         await updateDoc(
-          doc(db, "students", selectedId),
+          doc(db, "students", selected.id),
           {
             studentUids: [studentProfile.id],
             studentEmail: email
@@ -1631,6 +1814,7 @@ function TutorDashboard({ user }) {
 
   async function addGrade(event) {
     event.preventDefault();
+    if (!selected || !currentClass) return;
 
     setError("");
     setNotice("");
@@ -1653,14 +1837,10 @@ function TutorDashboard({ user }) {
       }
 
       await addDoc(
-        collection(
-          db,
-          "students",
-          selectedId,
-          "grades"
-        ),
+        collection(db, "students", selected.id, "grades"),
         {
           title: newGrade.title.trim(),
+          classId: currentClass.id,
           earned,
           possible,
           feedback: newGrade.feedback.trim(),
@@ -1700,13 +1880,7 @@ function TutorDashboard({ user }) {
 
     try {
       await updateDoc(
-        doc(
-          db,
-          "students",
-          selectedId,
-          "grades",
-          gradeId
-        ),
+        doc(db, "students", selectedId, "grades", gradeId),
         {
           published: true,
           publishedAt: serverTimestamp()
@@ -1723,6 +1897,7 @@ function TutorDashboard({ user }) {
 
   async function saveSession(event) {
     event.preventDefault();
+    if (!selected || !currentClass) return;
 
     setError("");
     setNotice("");
@@ -1754,22 +1929,27 @@ function TutorDashboard({ user }) {
       }
 
       await updateDoc(
-        doc(db, "students", selectedId),
+        doc(db, "students", selected.id),
         {
-          meetingUrl: session.meetingUrl.trim(),
-          nextLessonAt: session.lessonAt
-            ? new Date(
-                session.lessonAt
-              ).toISOString()
-            : "",
-          durationMinutes: Number(
-            session.durationMinutes
+          classes: classes.map(c =>
+            c.id === currentClass.id
+              ? {
+                  ...c,
+                  meetingUrl: session.meetingUrl.trim(),
+                  nextLessonAt: session.lessonAt
+                    ? new Date(session.lessonAt).toISOString()
+                    : "",
+                  durationMinutes: Number(
+                    session.durationMinutes
+                  )
+                }
+              : c
           )
         }
       );
 
       setNotice(
-        "Lesson details saved for student and parent portals."
+        `Lesson details saved for ${currentClass.name}.`
       );
     } catch (e) {
       setError(readableError(e));
@@ -1829,8 +2009,7 @@ function TutorDashboard({ user }) {
         </div>
       )}
 
-
-     <TutorGuide />
+      <TutorGuide />
 
       <div className="metric-grid">
         <div className="metric">
@@ -1847,9 +2026,7 @@ function TutorDashboard({ user }) {
 
         <div className="metric">
           <small>Notifications</small>
-          <strong className="metric-subject">
-            Manual
-          </strong>
+          <strong className="metric-subject">Manual</strong>
           <span>No automatic grade emails</span>
         </div>
       </div>
@@ -1858,8 +2035,7 @@ function TutorDashboard({ user }) {
         <section className="panel">
           <div className="panel-heading">
             <h2>
-              <Users size={19} />
-              Add a student
+              <Users size={19} /> Add a student
             </h2>
           </div>
 
@@ -1913,7 +2089,6 @@ function TutorDashboard({ user }) {
                   setStudentEmail(e.target.value)
                 }
               />
-
               <small className="muted">
                 Student accounts must register and verify
                 first. You can link one later.
@@ -1938,7 +2113,7 @@ function TutorDashboard({ user }) {
               </label>
 
               <label>
-                Subject
+                First class / subject
                 <input
                   required
                   maxLength={60}
@@ -1958,8 +2133,7 @@ function TutorDashboard({ user }) {
               className="button"
               disabled={busy}
             >
-              <Plus size={17} />
-              Add student
+              <Plus size={17} /> Add student
             </button>
           </form>
         </section>
@@ -1967,8 +2141,7 @@ function TutorDashboard({ user }) {
         <section className="panel">
           <div className="panel-heading">
             <h2>
-              <GraduationCap size={19} />
-              Your students
+              <GraduationCap size={19} /> Your students
             </h2>
           </div>
 
@@ -1987,7 +2160,10 @@ function TutorDashboard({ user }) {
                       ? "student-row active"
                       : "student-row"
                   }
-                  onClick={() => setSelectedId(s.id)}
+                  onClick={() => {
+                    setSelectedId(s.id);
+                    setSelectedClassId("");
+                  }}
                 >
                   <span className="student-avatar">
                     {s.name.charAt(0).toUpperCase()}
@@ -2012,8 +2188,147 @@ function TutorDashboard({ user }) {
         <>
           <div className="section-divider">
             <h2>Manage {selected.name}</h2>
-            <span>{selected.parentEmail}</span>
+            <span>
+              {selected.gradeLevel || "Grade not set"} ·{" "}
+              {selected.parentEmail}
+            </span>
           </div>
+
+          <section
+            className="panel"
+            style={{ marginTop: 22 }}
+          >
+            <div className="panel-heading">
+              <h2>
+                <BookOpen size={19} />
+                Student details and classes
+              </h2>
+            </div>
+
+            <p className="muted">
+              Update the student's grade level when they advance,
+              and add as many subjects as needed. Each class
+              has its own assessments and lesson link.
+            </p>
+
+            <form
+              className="stack-form"
+              onSubmit={saveGradeLevel}
+            >
+              <label>
+                Student grade level
+                <input
+                  required
+                  maxLength={30}
+                  placeholder="e.g. Grade 9"
+                  value={gradeLevelEdit}
+                  onChange={e =>
+                    setGradeLevelEdit(e.target.value)
+                  }
+                />
+              </label>
+
+              <button
+                className="button"
+                type="submit"
+                disabled={busy}
+              >
+                Save grade level
+              </button>
+            </form>
+
+            <div
+              className="panel-heading"
+              style={{ marginTop: 28 }}
+            >
+              <h2>Classes for {selected.name}</h2>
+            </div>
+
+            <div
+              className="student-tabs"
+              style={{ marginBottom: 10 }}
+            >
+              {classes.map(c => (
+                <button
+                  type="button"
+                  key={c.id}
+                  className={
+                    c.id === currentClass?.id
+                      ? "selected"
+                      : ""
+                  }
+                  onClick={() =>
+                    setSelectedClassId(c.id)
+                  }
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
+            <p className="muted tiny">
+              Selected class:{" "}
+              <strong>{currentClass?.name}</strong>.
+              Assessments and upcoming lesson details below
+              belong to the selected class.
+            </p>
+
+            <div
+              className="dashboard-grid"
+              style={{ marginBottom: 0 }}
+            >
+              <form
+                className="stack-form"
+                onSubmit={addClass}
+              >
+                <label>
+                  Add another class
+                  <input
+                    required
+                    maxLength={60}
+                    placeholder="e.g. English"
+                    value={newClassName}
+                    onChange={e =>
+                      setNewClassName(e.target.value)
+                    }
+                  />
+                </label>
+
+                <button
+                  className="button"
+                  disabled={busy}
+                  type="submit"
+                >
+                  <Plus size={17} /> Add class
+                </button>
+              </form>
+
+              <form
+                className="stack-form"
+                onSubmit={renameClass}
+              >
+                <label>
+                  Rename selected class
+                  <input
+                    required
+                    maxLength={60}
+                    value={classNameEdit}
+                    onChange={e =>
+                      setClassNameEdit(e.target.value)
+                    }
+                  />
+                </label>
+
+                <button
+                  className="button"
+                  disabled={busy}
+                  type="submit"
+                >
+                  Rename class
+                </button>
+              </form>
+            </div>
+          </section>
 
           <section
             className="panel"
@@ -2027,8 +2342,8 @@ function TutorDashboard({ user }) {
             </div>
 
             <p className="muted">
-              Link this student record to a separate
-              student login. Parents keep their own login.
+              Link this student record to a separate student
+              login. Parents keep their own login.
             </p>
 
             <form
@@ -2142,22 +2457,22 @@ function TutorDashboard({ user }) {
                   className="button"
                   disabled={busy}
                 >
-                  <Plus size={17} />
-                  Save draft grade
+                  <Plus size={17} /> Save draft grade
                 </button>
               </form>
             </section>
 
             <section className="panel">
               <div className="panel-heading">
-                <h2>Assessment history</h2>
+                <h2>
+                  {currentClass?.name} assessment history
+                </h2>
 
                 <button
                   className="subtle-button"
                   onClick={emailParent}
                 >
-                  <Send size={16} />
-                  Email parent
+                  <Send size={16} /> Email parent
                 </button>
               </div>
 
@@ -2168,16 +2483,19 @@ function TutorDashboard({ user }) {
               />
 
               <p className="muted tiny">
-                Only published scores appear in student
-                and parent accounts. Email Parent opens
-                your email app; it does not send automatically.
+                Only published scores for the selected class
+                appear in student and parent accounts.
+                Email Parent opens your email app; it
+                does not send automatically.
               </p>
             </section>
           </div>
 
           <section className="panel session-panel">
             <div className="panel-heading">
-              <h2>Upcoming lesson</h2>
+              <h2>
+                Upcoming {currentClass?.name} lesson
+              </h2>
             </div>
 
             <form
