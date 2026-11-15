@@ -2,147 +2,155 @@
 import { useState } from "react";
 import {
   ArrowRight,
+  BookOpenCheck,
   CheckCircle2,
   ClipboardCopy,
+  GraduationCap,
+  Mail,
+  ShieldCheck,
   Sparkles
 } from "lucide-react";
 
 import {
   AREA_LABELS,
+  TUTORING_GOALS,
   predictLearningArea,
-  makeStarterPlan,
-  formatPlan
+  buildTutoringMatch,
+  formatTutoringInquiry
 } from "./learningClassifier.js";
 
-const EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
-const AREA_OPTIONS = Object.entries(AREA_LABELS);
+const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
 
 export default function LearningNeedsAssistant() {
   const [grade, setGrade] = useState("Grade 8");
+  const [subjectChoice, setSubjectChoice] = useState("auto");
+  const [goal, setGoal] = useState("catch_up");
+  const [hours, setHours] = useState("2");
   const [challenge, setChallenge] = useState("");
-  const [area, setArea] = useState("auto");
-  const [result, setResult] = useState(null);
+  const [match, setMatch] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  function createPlan(event) {
+  function clearPreviousMatch() {
+    setMatch(null);
+    setCopied(false);
+  }
+
+  function findMatch(event) {
     event.preventDefault();
 
-    const description = challenge
-      .trim()
-      .slice(0, 400);
+    const description = challenge.trim().slice(0, 400);
 
     if (description.length < 10) return;
 
-    const prediction =
-      predictLearningArea(description);
-
-    const selected =
-      area === "auto"
+    const prediction = predictLearningArea(description);
+    const subject =
+      subjectChoice === "auto"
         ? prediction.area
-        : area;
+        : subjectChoice;
 
-    setResult({
-      plan: makeStarterPlan({
-        area: selected,
+    setMatch({
+      details: buildTutoringMatch({
+        area: subject,
         gradeLevel: grade,
-        challenge: description
+        challenge: description,
+        goal,
+        weeklyHours: Number(hours)
       }),
-      prediction:
-        area === "auto" ? prediction : null
+      uncertain:
+        subjectChoice === "auto" && prediction.uncertain
     });
 
     setCopied(false);
   }
 
-  async function copyPlan() {
-    if (!result) return;
+  const inquiry = match
+    ? formatTutoringInquiry(match.details)
+    : "";
+
+  async function copyInquiry() {
+    if (!inquiry) return;
 
     try {
-      await navigator.clipboard.writeText(
-        formatPlan(result.plan)
-      );
+      await navigator.clipboard.writeText(inquiry);
       setCopied(true);
     } catch {
       setCopied(false);
     }
   }
 
-  const requestBody = result
-    ? `${formatPlan(result.plan)}\n\nI'd like to ask about online tutoring availability.`
-    : "";
-
   return (
     <section
-      className="lb-needs"
-      aria-labelledby="lb-needs-title"
+      className="lb-match"
+      id="tutor-match"
+      aria-labelledby="lb-match-heading"
     >
-      <div className="lb-needs-heading">
-        <span className="lb-needs-symbol">
-          <Sparkles size={21} />
+      <div className="lb-match-top">
+        <span className="lb-match-symbol">
+          <Sparkles size={22} />
         </span>
 
         <div>
           <span className="section-kicker">
-            FREE INTERACTIVE TOOL
+            AI-POWERED TUTORING MATCH
           </span>
 
-          <h3 id="lb-needs-title">
-            Find your starting point
+          <h3 id="lb-match-heading">
+            What kind of tutoring would help?
           </h3>
 
           <p>
-            Describe a learning challenge to get
-            a practical two-session tutoring
-            starter plan.
+            Tell us what schoolwork is challenging.
+            Our lightweight model helps identify a
+            possible tutoring focus and prepares an
+            inquiry you can send directly to the tutor.
           </p>
         </div>
       </div>
 
       <form
-        className="lb-needs-form"
-        onSubmit={createPlan}
+        className="lb-match-form"
+        onSubmit={findMatch}
       >
         <label>
-          Student's grade
+          Grade level
 
           <select
             value={grade}
-            onChange={e =>
-              setGrade(e.target.value)
-            }
+            onChange={event => {
+              setGrade(event.target.value);
+              clearPreviousMatch();
+            }}
           >
             <option value="Kindergarten">
               Kindergarten
             </option>
 
-            {Array.from(
-              { length: 12 },
-              (_, index) => (
-                <option
-                  key={index + 1}
-                  value={`Grade ${index + 1}`}
-                >
-                  Grade {index + 1}
-                </option>
-              )
-            )}
+            {Array.from({ length: 12 }, (_, i) => (
+              <option
+                key={i + 1}
+                value={`Grade ${i + 1}`}
+              >
+                Grade {i + 1}
+              </option>
+            ))}
           </select>
         </label>
 
         <label>
-          Subject (optional)
+          Subject
 
           <select
-            value={area}
-            onChange={e =>
-              setArea(e.target.value)
-            }
+            value={subjectChoice}
+            onChange={event => {
+              setSubjectChoice(event.target.value);
+              clearPreviousMatch();
+            }}
           >
             <option value="auto">
-              Suggest from description
+              Let AI suggest a subject
             </option>
 
-            {AREA_OPTIONS.map(
+            {Object.entries(AREA_LABELS).map(
               ([value, label]) => (
                 <option
                   key={value}
@@ -155,270 +163,483 @@ export default function LearningNeedsAssistant() {
           </select>
         </label>
 
-        <label className="lb-needs-full">
-          What is the student finding difficult?
+        <label>
+          Main tutoring goal
+
+          <select
+            value={goal}
+            onChange={event => {
+              setGoal(event.target.value);
+              clearPreviousMatch();
+            }}
+          >
+            {TUTORING_GOALS.map(option => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Preferred hours per week
+
+          <select
+            value={hours}
+            onChange={event => {
+              setHours(event.target.value);
+              clearPreviousMatch();
+            }}
+          >
+            <option value="2">
+              2 hours (recommended starting point)
+            </option>
+
+            <option value="3">
+              3 hours
+            </option>
+
+            <option value="4">
+              4 hours
+            </option>
+          </select>
+        </label>
+
+        <label className="lb-match-full">
+          What is the student struggling with?
 
           <textarea
-            value={challenge}
-            maxLength={400}
             rows={3}
             required
             minLength={10}
-            placeholder="For example: My eighth grader understands multiplication but struggles with fractions and word problems."
-            onChange={e =>
-              setChallenge(e.target.value)
-            }
+            maxLength={400}
+            value={challenge}
+            onChange={event => {
+              setChallenge(event.target.value);
+              clearPreviousMatch();
+            }}
+            placeholder="Example: Fractions and word problems are making Grade 8 math difficult. We want regular one-on-one help."
           />
+
+          <small>
+            No names or other personal details needed.
+          </small>
         </label>
 
         <button
-          className="button"
+          className="button lb-match-submit"
           type="submit"
         >
-          Create starter plan
+          Find my tutoring match
           <ArrowRight size={17} />
         </button>
       </form>
 
-      {result && (
+      {match && (
         <div
-          className="lb-needs-result"
+          className="lb-match-result"
           role="status"
         >
-          <div className="lb-needs-result-head">
-            <CheckCircle2 size={20} />
+          <div className="lb-match-result-title">
+            <CheckCircle2 size={22} />
 
-            <strong>
-              Suggested focus:{" "}
-              {result.plan.subject}
-            </strong>
+            <div>
+              <span className="lb-match-eyebrow">
+                POTENTIAL TUTORING MATCH
+              </span>
+
+              <h4>
+                {match.details.subject} -{" "}
+                {match.details.gradeLevel}
+              </h4>
+            </div>
           </div>
 
-          {result.prediction?.uncertain && (
-            <p className="lb-needs-caution">
-              The description could fit more
-              than one subject. Choose a subject
+          {match.uncertain && (
+            <p className="lb-match-warning">
+              Your description might fit several
+              subjects. Select the subject manually
               above if this suggestion isn't right.
             </p>
           )}
 
-          <div className="lb-needs-steps">
+          <p className="lb-match-focus">
+            {match.details.focus}
+          </p>
+
+          <p className="lb-match-emphasis">
+            {match.details.emphasis}
+          </p>
+
+          <div className="lb-match-cards">
             <div>
-              <b>First session</b>
-              <p>{result.plan.first}</p>
+              <GraduationCap size={19} />
+              <strong>First tutoring session</strong>
+              <p>{match.details.sessionOne}</p>
             </div>
 
             <div>
-              <b>Second session</b>
-              <p>{result.plan.second}</p>
+              <BookOpenCheck size={19} />
+              <strong>Follow-up tutoring</strong>
+              <p>{match.details.sessionTwo}</p>
             </div>
 
             <div>
-              <b>Between lessons</b>
-              <p>{result.plan.between}</p>
+              <ShieldCheck size={19} />
+              <strong>Family progress updates</strong>
+              <p>{match.details.progress}</p>
             </div>
           </div>
 
-          <div className="lb-needs-actions">
-            <button
-              type="button"
-              className="lb-needs-secondary"
-              onClick={copyPlan}
-            >
-              <ClipboardCopy size={16} />
-              {copied ? "Copied!" : "Copy plan"}
-            </button>
+          <div className="lb-match-conversion">
+            <div>
+              <span>
+                Illustrative weekly tutoring cost
+              </span>
 
-            {EMAIL && (
-              <a
-                className="button"
-                href={`mailto:${EMAIL}?subject=${encodeURIComponent(
-                  "LessonBilly tutoring inquiry"
-                )}&body=${encodeURIComponent(
-                  requestBody
-                )}`}
+              <strong>
+                ${match.details.estimatedWeekly}
+                <small> / week</small>
+              </strong>
+
+              <p>
+                {match.details.weeklyHours} hours ×
+                $25/hour. Availability, subject fit,
+                and scheduling are confirmed by the tutor.
+              </p>
+            </div>
+
+            <div className="lb-match-actions">
+              {CONTACT_EMAIL && (
+                <a
+                  className="button"
+                  href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+                    `LessonBilly tutoring inquiry - ${match.details.subject}`
+                  )}&body=${encodeURIComponent(inquiry)}`}
+                >
+                  <Mail size={17} />
+                  Request tutoring availability
+                </a>
+              )}
+
+              <button
+                className="lb-match-copy"
+                type="button"
+                onClick={copyInquiry}
               >
-                Ask about tutoring
-                <ArrowRight size={16} />
-              </a>
-            )}
+                <ClipboardCopy size={16} />
+
+                {copied
+                  ? "Inquiry copied"
+                  : "Copy my inquiry"}
+              </button>
+            </div>
           </div>
 
-          <details>
+          <details className="lb-match-preview">
             <summary>
-              View the full plan as text
+              Preview the message you can send
             </summary>
 
-            <pre>
-              {formatPlan(result.plan)}
-            </pre>
+            <pre>{inquiry}</pre>
           </details>
         </div>
       )}
 
-      <p className="lb-needs-disclaimer">
-        This uses a small text-classification model,
-        not a chatbot or academic diagnosis. It
-        runs entirely in this browser; your description
-        isn't sent to LessonBilly unless you choose
-        to email it. No account is required.
+      <p className="lb-match-fineprint">
+        This is a lightweight Naive Bayes text classifier
+        trained on example descriptions, not a generative
+        chatbot or a validated educational assessment.
+        It runs in this browser without a GPU, API key,
+        or daily AI quota. Nothing is submitted to
+        LessonBilly unless you choose to send an email.
       </p>
 
       <style>{`
-        .lb-needs {
+        .lb-match {
           max-width: 960px;
-          margin: 30px auto 0;
+          margin: 32px auto 0;
           background: #fff;
           border: 1px solid #dfe7f7;
           border-radius: 20px;
-          padding: 26px;
+          padding: 28px;
           box-shadow: 0 16px 35px #263f9e0b;
         }
-        .lb-needs-heading {
+
+        .lb-match-top {
           display: flex;
           align-items: flex-start;
           gap: 14px;
         }
-        .lb-needs-symbol {
+
+        .lb-match-symbol {
+          display: flex;
           background: #eaf0ff;
           color: #4268db;
           padding: 12px;
           border-radius: 12px;
-          display: flex;
         }
-        .lb-needs-heading h3 {
-          font-size: 25px;
-          margin: 4px 0 6px;
+
+        .lb-match-top h3 {
+          font-size: 26px;
+          margin: 6px 0 8px;
           color: #1e3157;
         }
-        .lb-needs-heading p {
+
+        .lb-match-top p {
           font-size: 14px;
+          color: #61738e;
+          line-height: 1.7;
           margin: 0;
-          color: #65738a;
         }
-        .lb-needs-form {
+
+        .lb-match-form {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 15px;
-          margin-top: 22px;
+          gap: 16px;
+          margin-top: 24px;
         }
-        .lb-needs-form label {
+
+        .lb-match-form label {
           display: flex;
           flex-direction: column;
-          gap: 7px;
+          gap: 8px;
           font-size: 13px;
           color: #435777;
           font-weight: 800;
         }
-        .lb-needs-full {
+
+        .lb-match-form label small {
+          color: #7b8ba2;
+          font-size: 11px;
+          font-weight: 500;
+        }
+
+        .lb-match-full {
           grid-column: 1 / -1;
         }
-        .lb-needs-form select,
-        .lb-needs-form textarea {
+
+        .lb-match-form select,
+        .lb-match-form textarea {
           width: 100%;
-          border-radius: 10px;
           border: 1px solid #d9e3f1;
+          border-radius: 10px;
+          background: white;
+          color: #253858;
           padding: 12px;
           font: inherit;
-          color: #253858;
-          background: white;
+          min-width: 0;
         }
-        .lb-needs-form textarea {
+
+        .lb-match-form textarea {
           resize: vertical;
         }
-        .lb-needs-form .button {
+
+        .lb-match-submit {
           justify-self: start;
         }
-        .lb-needs-result {
-          border: 1px solid #c8d8f5;
-          background: #f6f9ff;
+
+        .lb-match-result {
+          margin-top: 23px;
+          padding: 20px;
+          border: 1px solid #c6d6f7;
           border-radius: 14px;
-          padding: 19px;
-          margin-top: 21px;
+          background: #f6f9ff;
         }
-        .lb-needs-result-head {
+
+        .lb-match-result-title {
           display: flex;
           align-items: center;
-          gap: 9px;
-          color: #284fbd;
+          gap: 12px;
+          color: #345bc7;
         }
-        .lb-needs-steps {
+
+        .lb-match-eyebrow {
+          font-size: 11px;
+          letter-spacing: 0.06em;
+          font-weight: 800;
+          color: #56709d;
+        }
+
+        .lb-match-result-title h4 {
+          font-size: 22px;
+          color: #1e3157;
+          margin: 4px 0;
+        }
+
+        .lb-match-focus {
+          font-size: 15px;
+          font-weight: 700;
+          color: #273e66;
+          margin: 18px 0 6px;
+        }
+
+        .lb-match-emphasis {
+          font-size: 13px;
+          color: #61738e;
+          margin: 0 0 15px;
+        }
+
+        .lb-match-warning {
+          background: #fff8e9;
+          color: #75551f;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 12px;
+        }
+
+        .lb-match-cards {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 12px;
-          margin-top: 17px;
         }
-        .lb-needs-steps > div {
-          border: 1px solid #dee8fb;
-          border-radius: 10px;
-          padding: 14px;
+
+        .lb-match-cards > div {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border: 1px solid #e1e8f8;
+          border-radius: 12px;
           background: #fff;
+          padding: 15px;
         }
-        .lb-needs-steps b {
+
+        .lb-match-cards svg {
+          color: #4469d7;
+        }
+
+        .lb-match-cards strong {
           font-size: 13px;
-          color: #1e3157;
+          color: #253858;
         }
-        .lb-needs-steps p {
-          font-size: 13px;
-          color: #5c6c87;
-          line-height: 1.55;
-          margin: 7px 0 0;
+
+        .lb-match-cards p {
+          margin: 0;
+          font-size: 12px;
+          color: #64748f;
+          line-height: 1.6;
         }
-        .lb-needs-caution {
-          color: #76551d;
-          font-size: 13px;
-        }
-        .lb-needs-actions {
+
+        .lb-match-conversion {
           display: flex;
           align-items: center;
-          gap: 11px;
+          justify-content: space-between;
           flex-wrap: wrap;
-          margin-top: 17px;
+          gap: 18px;
+          margin-top: 19px;
+          padding-top: 18px;
+          border-top: 1px solid #dbe5fa;
         }
-        .lb-needs-secondary {
+
+        .lb-match-conversion > div:first-child {
+          max-width: 430px;
+        }
+
+        .lb-match-conversion > div:first-child > span {
+          display: block;
+          color: #5d6d88;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .lb-match-conversion strong {
+          display: block;
+          color: #213a70;
+          font-size: 30px;
+          margin: 4px 0;
+        }
+
+        .lb-match-conversion strong small {
+          font-size: 13px;
+          color: #60738f;
+        }
+
+        .lb-match-conversion p {
+          color: #64748f;
+          font-size: 11px;
+          margin: 4px 0;
+          line-height: 1.5;
+        }
+
+        .lb-match-actions {
           display: flex;
+          flex-direction: column;
+          gap: 10px;
+          align-items: stretch;
+        }
+
+        .lb-match-actions .button {
+          justify-content: center;
+        }
+
+        .lb-match-copy {
+          display: inline-flex;
+          gap: 8px;
           align-items: center;
-          gap: 7px;
+          justify-content: center;
+          padding: 11px 13px;
+          background: white;
           border: 1px solid #a9bff1;
           border-radius: 9px;
-          padding: 12px 15px;
           color: #345bc7;
-          background: #fff;
           font-weight: 800;
-        }
-        .lb-needs-result details {
-          margin-top: 15px;
-          color: #536480;
           font-size: 12px;
         }
-        .lb-needs-result summary {
+
+        .lb-match-preview {
+          margin-top: 15px;
+          font-size: 12px;
+          color: #5d6f89;
+        }
+
+        .lb-match-preview summary {
           cursor: pointer;
         }
-        .lb-needs-result pre {
+
+        .lb-match-preview pre {
           white-space: pre-wrap;
-          font-family: inherit;
           overflow-wrap: anywhere;
-          line-height: 1.7;
-          padding: 13px;
-          background: #fff;
-          border-radius: 9px;
+          background: white;
+          border-radius: 8px;
+          padding: 12px;
+          line-height: 1.6;
+          font-family: inherit;
         }
-        .lb-needs-disclaimer {
-          font-size: 12px;
-          color: #687a96;
+
+        .lb-match-fineprint {
+          font-size: 11px;
+          color: #7b8ba2;
           line-height: 1.6;
           margin: 17px 0 0;
         }
+
         @media (max-width: 700px) {
-          .lb-needs {
+          .lb-match {
             padding: 18px;
           }
-          .lb-needs-form,
-          .lb-needs-steps {
+
+          .lb-match-top h3 {
+            font-size: 22px;
+          }
+
+          .lb-match-form,
+          .lb-match-cards {
             grid-template-columns: 1fr;
           }
-          .lb-needs-heading h3 {
-            font-size: 21px;
+
+          .lb-match-conversion {
+            align-items: stretch;
+          }
+
+          .lb-match-actions {
+            width: 100%;
+          }
+
+          .lb-match-submit {
+            justify-self: stretch;
           }
         }
       `}</style>

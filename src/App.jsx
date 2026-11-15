@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
@@ -149,7 +148,6 @@ function Brand({ go }) {
       <span className="brand-symbol">
         L<span>✓</span>
       </span>
-
       <span>
         Lesson<span className="brand-highlight">Billy</span>
       </span>
@@ -176,11 +174,20 @@ function Header({ user, go, logout }) {
   return (
     <header className="site-header">
       <div className="shell header-inner">
-        <Brand go={navigate} />
+        <Brand
+          go={page =>
+            navigate(
+              user && page === "home"
+                ? "dashboard"
+                : page
+            )
+          }
+        />
 
         <button
           className="mobile-menu"
           aria-label="Toggle navigation"
+          aria-expanded={menu}
           onClick={() => setMenu(!menu)}
         >
           {menu ? <X size={23} /> : <Menu size={23} />}
@@ -190,51 +197,43 @@ function Header({ user, go, logout }) {
           className={menu ? "nav open" : "nav"}
           aria-label="Main navigation"
         >
-          <button onClick={() => navigate("home")}>
-            Home
-          </button>
+          {!user && (
+            <>
+              <button onClick={() => navigate("home")}>
+                Home
+              </button>
 
-          <a
-            href="/#subjects"
-            onClick={e => {
-              e.preventDefault();
-              anchor("subjects");
-            }}
-          >
-            Subjects
-          </a>
+              <a
+                href="/#subjects"
+                onClick={e => {
+                  e.preventDefault();
+                  anchor("subjects");
+                }}
+              >
+                Subjects
+              </a>
 
-          <a
-            href="/#pricing"
-            onClick={e => {
-              e.preventDefault();
-              anchor("pricing");
-            }}
-          >
-            Pricing
-          </a>
+              <a
+                href="/#pricing"
+                onClick={e => {
+                  e.preventDefault();
+                  anchor("pricing");
+                }}
+              >
+                Pricing
+              </a>
 
-          <a
-            href="/#about"
-            onClick={e => {
-              e.preventDefault();
-              anchor("about");
-            }}
-          >
-            About
-          </a>
-
-          <button
-            onClick={() =>
-              navigate(user ? "practice" : "auth")
-            }
-          >
-            Practice Center
-          </button>
-
-          <a href={`mailto:${CONTACT_EMAIL}`}>
-            Contact
-          </a>
+              <a
+                href="/#about"
+                onClick={e => {
+                  e.preventDefault();
+                  anchor("about");
+                }}
+              >
+                About
+              </a>
+            </>
+          )}
 
           {user ? (
             <>
@@ -244,6 +243,16 @@ function Header({ user, go, logout }) {
               >
                 Dashboard
               </button>
+
+              <button
+                onClick={() => navigate("practice")}
+              >
+                Practice Center
+              </button>
+
+              <a href={`mailto:${CONTACT_EMAIL}`}>
+                Contact
+              </a>
 
               <button
                 className="nav-logout"
@@ -257,13 +266,25 @@ function Header({ user, go, logout }) {
               </button>
             </>
           ) : (
-            <button
-              className="button button-small"
-              onClick={() => navigate("auth")}
-            >
-              Portal Login
-              <ArrowRight size={16} />
-            </button>
+            <>
+              <button
+                onClick={() => navigate("auth")}
+              >
+                Practice Center
+              </button>
+
+              <a href={`mailto:${CONTACT_EMAIL}`}>
+                Contact
+              </a>
+
+              <button
+                className="button button-small"
+                onClick={() => navigate("auth")}
+              >
+                Portal Login
+                <ArrowRight size={16} />
+              </button>
+            </>
           )}
         </nav>
       </div>
@@ -514,14 +535,12 @@ function Home({ go, user }) {
               {
                 n: "01",
                 title: "Get in touch",
-                text:
-                  "Share the student's grade and topics."
+                text: "Share the student's grade and topics."
               },
               {
                 n: "02",
                 title: "Meet online",
-                text:
-                  "Join using your class meeting link."
+                text: "Join using your class meeting link."
               },
               {
                 n: "03",
@@ -545,9 +564,7 @@ function Home({ go, user }) {
       </section>
 
       <FeatureShowcase
-        onTry={() =>
-          go(user ? "practice" : "auth")
-        }
+        onTry={() => go(user ? "practice" : "auth")}
       />
 
       <section className="section" id="pricing">
@@ -570,10 +587,7 @@ function Home({ go, user }) {
               "Tutor-approved practice between sessions",
               "No required long-term contract"
             ].map(t => (
-              <div
-                className="pricing-point"
-                key={t}
-              >
+              <div className="pricing-point" key={t}>
                 <CheckCircle2 size={20} />
                 {t}
               </div>
@@ -615,8 +629,7 @@ function Home({ go, user }) {
             </a>
 
             <small>
-              Subject availability confirmed before
-              booking.
+              Subject availability confirmed before booking.
             </small>
           </motion.div>
         </div>
@@ -674,9 +687,7 @@ function Home({ go, user }) {
         >
           <Sparkles size={26} />
 
-          <h2>
-            Ready to make learning click?
-          </h2>
+          <h2>Ready to make learning click?</h2>
 
           <p>
             Tell me what your student is working on.
@@ -749,11 +760,12 @@ function AuthCard({ role, onSuccess }) {
 
         await sendEmailVerification(result.user);
       } else {
-        const result = await signInWithEmailAndPassword(
-          auth,
-          email.trim(),
-          password
-        );
+        const result =
+          await signInWithEmailAndPassword(
+            auth,
+            email.trim(),
+            password
+          );
 
         if (
           result.user.emailVerified &&
@@ -773,9 +785,7 @@ function AuthCard({ role, onSuccess }) {
 
             throw new Error(
               `This is a ${actual} account. Use ${
-                actual === "student"
-                  ? "Student"
-                  : "Parent"
+                actual === "student" ? "Student" : "Parent"
               } Sign In.`
             );
           }
@@ -799,9 +809,7 @@ function AuthCard({ role, onSuccess }) {
       <h2>
         {register
           ? `Create ${role} account`
-          : `${
-              student ? "Student" : "Parent"
-            } Sign In`}
+          : `${student ? "Student" : "Parent"} Sign In`}
       </h2>
 
       <p>
@@ -821,9 +829,7 @@ function AuthCard({ role, onSuccess }) {
               required
               maxLength={80}
               value={name}
-              onChange={e =>
-                setName(e.target.value)
-              }
+              onChange={e => setName(e.target.value)}
             />
           </label>
         )}
@@ -834,9 +840,7 @@ function AuthCard({ role, onSuccess }) {
             required
             type="email"
             value={email}
-            onChange={e =>
-              setEmail(e.target.value)
-            }
+            onChange={e => setEmail(e.target.value)}
           />
         </label>
 
@@ -847,9 +851,7 @@ function AuthCard({ role, onSuccess }) {
             type="password"
             minLength={register ? 8 : 6}
             value={password}
-            onChange={e =>
-              setPassword(e.target.value)
-            }
+            onChange={e => setPassword(e.target.value)}
           />
         </label>
 
@@ -858,9 +860,7 @@ function AuthCard({ role, onSuccess }) {
             <input
               type="checkbox"
               checked={guardian}
-              onChange={e =>
-                setGuardian(e.target.checked)
-              }
+              onChange={e => setGuardian(e.target.checked)}
             />
 
             <span>
@@ -879,16 +879,11 @@ function AuthCard({ role, onSuccess }) {
             : register
               ? "Create account"
               : "Sign in"}
-
           <ArrowRight size={17} />
         </button>
       </form>
 
-      {error && (
-        <div className="alert">
-          {error}
-        </div>
-      )}
+      {error && <div className="alert">{error}</div>}
 
       <div className="create-account-area">
         <span>
@@ -956,7 +951,6 @@ function AuthScreen({ onSuccess }) {
           gap: 24px;
           align-items: stretch;
         }
-
         .create-account-area {
           margin-top: 22px;
           padding-top: 19px;
@@ -965,23 +959,19 @@ function AuthScreen({ onSuccess }) {
           flex-direction: column;
           gap: 9px;
         }
-
         .create-account-button {
           background: #edf2ff !important;
           color: #345bc7 !important;
           border-color: #91aafa !important;
         }
-
         .guardian-confirm {
           display: flex !important;
           flex-direction: row !important;
           gap: 9px !important;
         }
-
         .guardian-confirm input {
           width: auto !important;
         }
-
         @media (max-width: 800px) {
           .portal-auth-grid {
             grid-template-columns: 1fr;
@@ -1040,7 +1030,6 @@ function Verification({ user, done }) {
           style={{ textAlign: "center" }}
         >
           <Mail size={34} />
-
           <h2>Verify your email</h2>
 
           <p>
@@ -1080,11 +1069,7 @@ function GradeList({ grades, onPublish }) {
   if (!grades.length) {
     return (
       <div className="empty-small">
-        No{" "}
-        {onPublish
-          ? "assessments"
-          : "published grades"}{" "}
-        yet.
+        No {onPublish ? "assessments" : "published grades"} yet.
       </div>
     );
   }
@@ -1092,41 +1077,29 @@ function GradeList({ grades, onPublish }) {
   return (
     <div className="grade-list">
       {grades.map(g => (
-        <div
-          className="grade-item"
-          key={g.id}
-        >
+        <div className="grade-item" key={g.id}>
           <div className="grade-circle">
-            {Math.round(
-              (g.earned / g.possible) * 100
-            )}%
+            {Math.round(g.earned / g.possible * 100)}%
           </div>
 
           <div className="grade-description">
             <strong>{g.title}</strong>
-
             <small>
               {g.earned} / {g.possible} points
-              {g.feedback
-                ? ` · ${g.feedback}`
-                : ""}
+              {g.feedback ? ` · ${g.feedback}` : ""}
             </small>
           </div>
 
           {onPublish && !g.published ? (
             <button
               className="button button-small"
-              onClick={() =>
-                onPublish(g.id)
-              }
+              onClick={() => onPublish(g.id)}
             >
               Publish
             </button>
           ) : (
             <span className="published-label">
-              {g.published
-                ? "Published"
-                : "Draft"}
+              {g.published ? "Published" : "Draft"}
             </span>
           )}
         </div>
@@ -1181,12 +1154,7 @@ function LearnerDashboard({ user, role }) {
 
     return onSnapshot(
       query(
-        collection(
-          db,
-          "students",
-          studentId,
-          "grades"
-        ),
+        collection(db, "students", studentId, "grades"),
         where("published", "==", true)
       ),
       snap =>
@@ -1200,12 +1168,8 @@ function LearnerDashboard({ user, role }) {
     );
   }, [studentId]);
 
-  const student = students.find(
-    s => s.id === studentId
-  );
-
+  const student = students.find(s => s.id === studentId);
   const classes = classList(student);
-
   const currentClass =
     classes.find(c => c.id === classId) || classes[0];
 
@@ -1218,10 +1182,7 @@ function LearnerDashboard({ user, role }) {
       earned: a.earned + g.earned,
       possible: a.possible + g.possible
     }),
-    {
-      earned: 0,
-      possible: 0
-    }
+    { earned: 0, possible: 0 }
   );
 
   return (
@@ -1229,10 +1190,7 @@ function LearnerDashboard({ user, role }) {
       <div className="dashboard-heading">
         <div>
           <span className="section-kicker">
-            {role === "student"
-              ? "STUDENT"
-              : "PARENT"}{" "}
-            PORTAL
+            {role === "student" ? "STUDENT" : "PARENT"} PORTAL
           </span>
 
           <h1>
@@ -1242,8 +1200,7 @@ function LearnerDashboard({ user, role }) {
           </h1>
 
           <p>
-            Welcome,{" "}
-            {user.displayName || user.email}.
+            Welcome, {user.displayName || user.email}.
             Published results appear here.
           </p>
         </div>
@@ -1254,14 +1211,11 @@ function LearnerDashboard({ user, role }) {
         </span>
       </div>
 
-      {error && (
-        <div className="alert">{error}</div>
-      )}
+      {error && <div className="alert">{error}</div>}
 
       {!students.length ? (
         <div className="panel empty-panel">
           <Users size={35} />
-
           <h2>Your account is ready.</h2>
 
           <p>
@@ -1270,8 +1224,7 @@ function LearnerDashboard({ user, role }) {
           </p>
 
           <div className="hint-box">
-            Your email:{" "}
-            <strong>{user.email}</strong>
+            Your email: <strong>{user.email}</strong>
           </div>
         </div>
       ) : (
@@ -1308,9 +1261,7 @@ function LearnerDashboard({ user, role }) {
                       ? "selected"
                       : ""
                   }
-                  onClick={() =>
-                    setClassId(c.id)
-                  }
+                  onClick={() => setClassId(c.id)}
                 >
                   {c.name}
                 </button>
@@ -1327,9 +1278,7 @@ function LearnerDashboard({ user, role }) {
 
           <div className="metric-grid">
             <div className="metric">
-              <small>
-                Published assessments
-              </small>
+              <small>Published assessments</small>
               <strong>{classGrades.length}</strong>
               <span>{currentClass?.name}</span>
             </div>
@@ -1339,9 +1288,7 @@ function LearnerDashboard({ user, role }) {
               <strong>
                 {totals.possible
                   ? `${Math.round(
-                      (totals.earned /
-                        totals.possible) *
-                        100
+                      (totals.earned / totals.possible) * 100
                     )}%`
                   : "-"}
               </strong>
@@ -1376,15 +1323,11 @@ function LearnerDashboard({ user, role }) {
               </div>
 
               <p className="schedule-date">
-                {formatDate(
-                  currentClass?.nextLessonAt
-                )}
+                {formatDate(currentClass?.nextLessonAt)}
               </p>
 
               <p className="muted">
-                {duration(
-                  currentClass?.durationMinutes
-                )}{" "}
+                {duration(currentClass?.durationMinutes)}{" "}
                 planned session
               </p>
 
@@ -1499,12 +1442,7 @@ function TutorDashboard({ user }) {
     }
 
     return onSnapshot(
-      collection(
-        db,
-        "students",
-        studentId,
-        "grades"
-      ),
+      collection(db, "students", studentId, "grades"),
       snap =>
         setGrades(
           snap.docs.map(d => ({
@@ -1516,12 +1454,8 @@ function TutorDashboard({ user }) {
     );
   }, [studentId]);
 
-  const student = students.find(
-    s => s.id === studentId
-  );
-
+  const student = students.find(s => s.id === studentId);
   const classes = classList(student);
-
   const currentClass =
     classes.find(c => c.id === classId) || classes[0];
 
@@ -1543,9 +1477,7 @@ function TutorDashboard({ user }) {
   useEffect(() => {
     setSession({
       meetingUrl: currentClass?.meetingUrl || "",
-      lessonAt: dateInput(
-        currentClass?.nextLessonAt
-      ),
+      lessonAt: dateInput(currentClass?.nextLessonAt),
       durationMinutes: minutes(
         currentClass?.durationMinutes
       )
@@ -1559,9 +1491,7 @@ function TutorDashboard({ user }) {
   ]);
 
   const sorted = grades
-    .filter(
-      g => classOfGrade(g) === currentClass?.id
-    )
+    .filter(g => classOfGrade(g) === currentClass?.id)
     .sort(
       (a, b) =>
         (b.createdAt?.seconds || 0) -
@@ -1676,9 +1606,7 @@ function TutorDashboard({ user }) {
 
       await updateDoc(
         doc(db, "students", studentId),
-        {
-          gradeLevel: gradeLevel.trim()
-        }
+        { gradeLevel: gradeLevel.trim() }
       );
     }, "Grade level updated.");
   }
@@ -1693,8 +1621,7 @@ function TutorDashboard({ user }) {
         !name ||
         classes.some(
           c =>
-            c.name.toLowerCase() ===
-            name.toLowerCase()
+            c.name.toLowerCase() === name.toLowerCase()
         )
       ) {
         throw new Error(
@@ -1740,8 +1667,7 @@ function TutorDashboard({ user }) {
         classes.some(
           c =>
             c.id !== currentClass.id &&
-            c.name.toLowerCase() ===
-              name.toLowerCase()
+            c.name.toLowerCase() === name.toLowerCase()
         )
       ) {
         throw new Error(
@@ -1840,11 +1766,7 @@ function TutorDashboard({ user }) {
   }
 
   async function publishGrade(id) {
-    if (
-      !window.confirm(
-        "Publish this score to the family?"
-      )
-    ) {
+    if (!window.confirm("Publish this score to the family?")) {
       return;
     }
 
@@ -1995,6 +1917,7 @@ function TutorDashboard({ user }) {
           >
             <label>
               Student name
+
               <input
                 required
                 maxLength={80}
@@ -2010,6 +1933,7 @@ function TutorDashboard({ user }) {
 
             <label>
               Parent's registered email
+
               <input
                 required
                 type="email"
@@ -2025,6 +1949,7 @@ function TutorDashboard({ user }) {
 
             <label>
               Student account email (optional)
+
               <input
                 type="email"
                 value={newStudent.studentEmail}
@@ -2040,6 +1965,7 @@ function TutorDashboard({ user }) {
             <div className="form-pair">
               <label>
                 Grade level
+
                 <input
                   required
                   maxLength={30}
@@ -2055,6 +1981,7 @@ function TutorDashboard({ user }) {
 
               <label>
                 First class
+
                 <input
                   required
                   maxLength={60}
@@ -2108,7 +2035,6 @@ function TutorDashboard({ user }) {
 
                   <span>
                     <b>{s.name}</b>
-
                     <small>
                       {s.subject} · {s.gradeLevel}
                     </small>
@@ -2150,6 +2076,7 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Student grade level
+
                 <input
                   maxLength={30}
                   value={gradeLevel}
@@ -2200,6 +2127,7 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Add another class
+
                   <input
                     required
                     maxLength={60}
@@ -2226,6 +2154,7 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Rename selected class
+
                   <input
                     required
                     maxLength={60}
@@ -2263,6 +2192,7 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Student's registered email
+
                 <input
                   type="email"
                   value={linkEmail}
@@ -2297,6 +2227,7 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Assessment title
+
                   <input
                     required
                     maxLength={100}
@@ -2313,6 +2244,7 @@ function TutorDashboard({ user }) {
                 <div className="form-pair">
                   <label>
                     Points earned
+
                     <input
                       required
                       type="number"
@@ -2330,6 +2262,7 @@ function TutorDashboard({ user }) {
 
                   <label>
                     Points possible
+
                     <input
                       required
                       type="number"
@@ -2348,6 +2281,7 @@ function TutorDashboard({ user }) {
 
                 <label>
                   Optional feedback
+
                   <textarea
                     rows="3"
                     maxLength={700}
@@ -2498,21 +2432,19 @@ function Privacy() {
         <h1>Privacy information</h1>
 
         <p>
-          LessonBilly uses Firebase Authentication
-          and Firestore for accounts, grades,
-          class information, Google Drive links,
-          and tutor-approved practice activities.
-          Google Drive hosts shared PDFs;
+          LessonBilly uses Firebase Authentication and
+          Firestore for accounts, grades, class information,
+          Google Drive links, and tutor-approved practice
+          activities. Google Drive hosts shared PDFs;
           Google Meet hosts live lessons.
         </p>
 
         <p>
-          Student practice selections and scores
-          are not saved in Firestore. Unpublished
-          notes and PDF text for local AI generation
-          stay in the current browser session.
-          Google Drive permissions separately
-          control who can open a shared PDF.
+          Student practice selections and scores are not
+          saved in Firestore. Unpublished notes and PDF
+          text for practice creation stay in the current
+          browser session. Google Drive permissions
+          separately control who can open a shared PDF.
         </p>
 
         <p>
@@ -2542,7 +2474,6 @@ function Footer({ go }) {
       <div className="shell footer-layout">
         <div>
           <Brand go={go} />
-
           <p>
             Personalized tutoring. Meaningful progress.
           </p>
@@ -2550,11 +2481,9 @@ function Footer({ go }) {
 
         <div>
           <span>Explore</span>
-
           <button onClick={() => go("home")}>
             Home
           </button>
-
           <button onClick={() => go("practice")}>
             Practice Center
           </button>
@@ -2562,15 +2491,12 @@ function Footer({ go }) {
 
         <div>
           <span>Connect</span>
-
           <a href={`mailto:${CONTACT_EMAIL}`}>
             Email LessonBilly
           </a>
-
           <button onClick={() => go("auth")}>
             Portal login
           </button>
-
           <button onClick={() => go("privacy")}>
             Privacy
           </button>
@@ -2613,7 +2539,6 @@ export default function App() {
         try {
           await reload(next);
           await next.getIdToken(true);
-
           setVerified(next.emailVerified);
 
           if (next.emailVerified) {

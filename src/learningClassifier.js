@@ -1,3 +1,6 @@
+// A lightweight Naive Bayes text classifier.
+// Runs in the browser without WebGPU, API calls, or model downloads.
+// Example training sentences are illustrative, not a validated assessment.
 
 const EXAMPLES = {
   math: [
@@ -77,8 +80,7 @@ const tokenize = text =>
     .split(/\s+/)
     .filter(token => token.length > 2);
 
-// Train a small Naive Bayes text classifier using
-// illustrative, hand-labeled example descriptions.
+// Train once from the sample descriptions.
 const model = (() => {
   const labels = Object.keys(EXAMPLES);
   const counts = {};
@@ -121,12 +123,9 @@ export function predictLearningArea(description) {
   const scores = model.labels
     .map(area => {
       const denominator =
-        model.totals[area] +
-        model.vocabularySize;
+        model.totals[area] + model.vocabularySize;
 
-      let score = Math.log(
-        1 / model.labels.length
-      );
+      let score = Math.log(1 / model.labels.length);
 
       for (const word of words) {
         score += Math.log(
@@ -139,6 +138,7 @@ export function predictLearningArea(description) {
     })
     .sort((a, b) => b.score - a.score);
 
+  // This score difference is not a calibrated probability.
   const recognized = words.some(word =>
     model.labels.some(label =>
       Boolean(model.counts[label][word])
@@ -154,89 +154,141 @@ export function predictLearningArea(description) {
   };
 }
 
-const PLANS = {
+// These describe what tutoring sessions might involve.
+// They are not student self-help plans or guaranteed results.
+const TUTORING_APPROACHES = {
   math: {
     focus:
-      "Work through examples, then practice similar problems independently.",
-    first:
-      "Identify one specific skill (such as fractions or algebra) and check understanding with five short problems.",
-    second:
-      "Practice two problem types, explain each step aloud, and review mistakes.",
-    between:
-      "Complete three short problems on two different days; mark where you got stuck."
+      "Work through the exact math skills that are causing difficulty.",
+    sessionOne:
+      "The tutor reviews recent problem types, identifies where the reasoning breaks down, and models a clear approach.",
+    sessionTwo:
+      "The tutor works through guided examples with the student, then checks their independent attempts and explains mistakes.",
+    progress:
+      "Class-specific worksheets, tutor-reviewed practice, and published assessment feedback."
   },
   reading: {
     focus:
-      "Strengthen comprehension by reading short passages and explaining ideas.",
-    first:
-      "Read a short, age-appropriate passage and identify its main idea and two details.",
-    second:
-      "Practice summarizing a new passage and answering evidence-based questions.",
-    between:
-      "Read for 10 minutes on two days and write one sentence about the main idea."
+      "Strengthen understanding of passages and reading assignments.",
+    sessionOne:
+      "The tutor reviews a passage with the student and checks which reading and comprehension tasks feel difficult.",
+    sessionTwo:
+      "The tutor models how to use evidence from a text, then provides guided reading practice and feedback.",
+    progress:
+      "Assigned reading materials, targeted flashcards, and parent-visible progress updates."
   },
   writing: {
     focus:
-      "Build clearer sentences and more organized paragraphs.",
-    first:
-      "Write a short paragraph with a topic sentence and two supporting details.",
-    second:
-      "Revise a paragraph for organization, grammar, and clarity.",
-    between:
-      "Write one short paragraph and highlight a sentence you want feedback on."
+      "Make writing assignments easier to organize and revise.",
+    sessionOne:
+      "The tutor reviews a sample assignment and identifies a manageable writing skill to focus on.",
+    sessionTwo:
+      "The tutor coaches the student through a draft or revision and gives specific, constructive feedback.",
+    progress:
+      "Writing exercises, classwork PDFs, and published feedback on progress."
   },
   science: {
     focus:
-      "Use simple explanations, diagrams, and retrieval practice to learn concepts.",
-    first:
-      "Choose one topic and explain five key terms in your own words.",
-    second:
-      "Apply the terms to an example or a labeled diagram, then self-check.",
-    between:
-      "Review five important terms on two days and draw one simple diagram."
+      "Make challenging science topics clearer through worked examples.",
+    sessionOne:
+      "The tutor discusses the current unit, checks essential vocabulary, and identifies confusing concepts.",
+    sessionTwo:
+      "The tutor guides the student through diagrams, examples, and subject-specific practice questions.",
+    progress:
+      "Shared lesson materials, tutor-approved quizzes, and published feedback."
   },
   study: {
     focus:
-      "Create a realistic study routine and build independent learning habits.",
-    first:
-      "List upcoming assignments and make a manageable weekly study schedule.",
-    second:
-      "Practice active recall, short work intervals, and checking completed tasks.",
-    between:
-      "Try two 15-minute study sessions and note what helped you focus."
+      "Build a consistent approach to assignments and test preparation.",
+    sessionOne:
+      "The tutor reviews current assignments and helps identify the main obstacle to keeping up.",
+    sessionTwo:
+      "The tutor coaches study strategies during the session and helps the student apply them to actual coursework.",
+    progress:
+      "Scheduled lessons, shared materials, and clear updates for families."
   }
 };
 
-export function makeStarterPlan({
+const GOALS = {
+  homework: {
+    label: "Keeping up with homework",
+    emphasis:
+      "Use current homework as the starting point for guided tutoring."
+  },
+  catch_up: {
+    label: "Catching up in class",
+    emphasis:
+      "Identify missing foundations first, then work toward current class topics."
+  },
+  test: {
+    label: "Preparing for a test",
+    emphasis:
+      "Prioritize the test topics and check understanding through guided practice."
+  },
+  confidence: {
+    label: "Building confidence",
+    emphasis:
+      "Set manageable lesson goals and give feedback as the student practices."
+  }
+};
+
+export const TUTORING_GOALS =
+  Object.entries(GOALS).map(
+    ([value, details]) => ({
+      value,
+      label: details.label
+    })
+  );
+
+export function buildTutoringMatch({
   area,
   gradeLevel,
-  challenge
+  challenge,
+  goal,
+  weeklyHours
 }) {
-  const chosen = Object.hasOwn(PLANS, area)
-    ? area
-    : "study";
+  const subject =
+    Object.hasOwn(TUTORING_APPROACHES, area)
+      ? area
+      : "study";
+
+  const selectedGoal =
+    Object.hasOwn(GOALS, goal)
+      ? goal
+      : "catch_up";
+
+  const hours =
+    [2, 3, 4].includes(Number(weeklyHours))
+      ? Number(weeklyHours)
+      : 2;
 
   return {
-    area: chosen,
-    subject: AREA_LABELS[chosen],
-    gradeLevel: gradeLevel || "Not specified",
-    challenge: String(challenge || "").trim(),
-    ...PLANS[chosen]
+    area: subject,
+    subject: AREA_LABELS[subject],
+    gradeLevel: String(gradeLevel || "Not specified"),
+    challenge: String(challenge || "").trim().slice(0, 400),
+    goal: GOALS[selectedGoal].label,
+    emphasis: GOALS[selectedGoal].emphasis,
+    weeklyHours: hours,
+    estimatedWeekly: hours * 25,
+    ...TUTORING_APPROACHES[subject]
   };
 }
 
-export function formatPlan(plan) {
+export function formatTutoringInquiry(match) {
   return [
-    "LessonBilly - Tutoring starter plan",
-    `Grade: ${plan.gradeLevel}`,
-    `Suggested focus: ${plan.subject}`,
-    `Learning challenge: ${plan.challenge}`,
+    "Hello,",
     "",
-    `Focus: ${plan.focus}`,
-    `First session: ${plan.first}`,
-    `Second session: ${plan.second}`,
-    `Between sessions: ${plan.between}`,
+    "I'm interested in one-on-one remote tutoring through LessonBilly.",
     "",
-    "This is a suggested starting point, not a test or assessment. A tutor will confirm the right approach."
+    `Grade: ${match.gradeLevel}`,
+    `Potential subject: ${match.subject}`,
+    `Main goal: ${match.goal}`,
+    `Learning challenge: ${match.challenge}`,
+    `Preferred weekly tutoring time: ${match.weeklyHours} hours`,
+    "",
+    "Could you confirm whether you can help with this subject, your availability, and the best way to get started?",
+    "",
+    "Thank you"
   ].join("\n");
 }

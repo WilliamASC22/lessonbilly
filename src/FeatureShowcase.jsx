@@ -56,13 +56,13 @@ const features = [
     detail: "Meeting link in the dashboard"
   },
   {
-    label: "Learning plan",
-    title: "A useful starting point before signing up",
+    label: "Tutor Match",
+    title: "See how tutoring could help your student",
     description:
-      "Describe what is challenging and get a two-session starter plan from our lightweight local classifier below.",
+      "Describe a school challenge. Our lightweight AI suggests an appropriate subject and shows what working with a tutor could involve, then prepares a personal inquiry.",
     icon: ListChecks,
     sample: "Challenge: Fractions and word problems",
-    detail: "Suggested focus: Math"
+    detail: "Suggested: Grade 8 Math tutoring"
   }
 ];
 
@@ -108,8 +108,8 @@ export default function FeatureShowcase({ onTry }) {
 
           <p>
             See how LessonBilly supports students
-            between sessions, then try the free
-            Learning Needs Assistant.
+            between sessions, then try our lightweight
+            AI Tutoring Match Assistant.
           </p>
         </motion.div>
 
@@ -133,9 +133,7 @@ export default function FeatureShowcase({ onTry }) {
                   role="tab"
                   aria-selected={index === active}
                   className={
-                    index === active
-                      ? "active"
-                      : ""
+                    index === active ? "active" : ""
                   }
                   onClick={() => setActive(index)}
                 >
@@ -164,9 +162,7 @@ export default function FeatureShowcase({ onTry }) {
                     ? {}
                     : { opacity: 0, y: -10 }
                 }
-                transition={{
-                  duration: 0.25
-                }}
+                transition={{ duration: 0.25 }}
               >
                 <div className="lb-showcase-badge">
                   <Icon size={18} />
@@ -174,12 +170,11 @@ export default function FeatureShowcase({ onTry }) {
                 </div>
 
                 <h3>{feature.title}</h3>
+
                 <p>{feature.description}</p>
 
                 <div className="lb-showcase-example">
-                  <strong>
-                    {feature.sample}
-                  </strong>
+                  <strong>{feature.sample}</strong>
 
                   <span>
                     <CheckCircle2 size={16} />
@@ -210,11 +205,13 @@ export default function FeatureShowcase({ onTry }) {
           max-width: 960px;
           margin: 0 auto;
         }
+
         .lb-showcase-tabs {
           display: flex;
           flex-direction: column;
           gap: 9px;
         }
+
         .lb-showcase-tabs button {
           display: flex;
           align-items: center;
@@ -227,11 +224,13 @@ export default function FeatureShowcase({ onTry }) {
           color: #53627e;
           font-weight: 800;
         }
+
         .lb-showcase-tabs button.active {
           color: #315bd0;
           border-color: #8ba7f5;
           background: #eaf0ff;
         }
+
         .lb-showcase-window {
           padding: 30px;
           min-height: 290px;
@@ -240,14 +239,17 @@ export default function FeatureShowcase({ onTry }) {
           border-radius: 18px;
           box-shadow: 0 20px 40px #263f9e12;
         }
+
         .lb-showcase-window h3 {
           font-size: 25px;
           margin: 16px 0 9px;
         }
+
         .lb-showcase-window p {
           font-size: 14px;
           color: #61738e;
         }
+
         .lb-showcase-badge {
           display: flex;
           align-items: center;
@@ -256,6 +258,7 @@ export default function FeatureShowcase({ onTry }) {
           font-size: 12px;
           font-weight: 800;
         }
+
         .lb-showcase-example {
           display: flex;
           flex-direction: column;
@@ -266,9 +269,11 @@ export default function FeatureShowcase({ onTry }) {
           padding: 15px;
           margin: 20px 0;
         }
+
         .lb-showcase-example strong {
           font-size: 15px;
         }
+
         .lb-showcase-example span {
           display: flex;
           gap: 7px;
@@ -276,18 +281,22 @@ export default function FeatureShowcase({ onTry }) {
           font-size: 12px;
           color: #169270;
         }
+
         @media (max-width: 700px) {
           .lb-showcase {
             grid-template-columns: 1fr;
           }
+
           .lb-showcase-tabs {
             flex-direction: row;
             overflow-x: auto;
           }
+
           .lb-showcase-tabs button {
             min-width: 170px;
             flex-shrink: 0;
           }
+
           .lb-showcase-window {
             padding: 21px;
           }

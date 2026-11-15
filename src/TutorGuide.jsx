@@ -97,13 +97,13 @@ LessonBilly`
       ]
     },
     {
-      title: "5. Introduce the Learning Needs Assistant to families",
+      title: "5. Introduce AI Tutor Match to prospective families",
       instructions: [
-        "On Home, scroll to the animated feature showcase and Find your starting point.",
+        "On Home, scroll to the animated feature showcase and What kind of tutoring would help?",
         "A parent can select a grade and describe the main academic challenge without creating an account.",
-        "The small, local machine-learning classifier suggests a subject and a two-session starting plan; the parent can override the subject.",
-        "Families can copy the plan or click Ask about tutoring to open a prefilled email. The website does not automatically store their description.",
-        "Treat this as an initial conversation aid, not a professional educational diagnosis."
+        "The small local machine-learning classifier suggests a subject and shows how tutoring sessions would address the student's needs. Parents can override the subject.",
+        "Families can preview and copy a structured inquiry or choose Request tutoring availability to open a prefilled email. The website does not automatically send or store the description.",
+        "The tool supports prospective client intake; it does not diagnose learning difficulties, guarantee results, or replace a tutor."
       ]
     },
     {
@@ -120,9 +120,7 @@ LessonBilly`
 
   async function copy(item) {
     try {
-      await navigator.clipboard.writeText(
-        item.body
-      );
+      await navigator.clipboard.writeText(item.body);
       setCopied(item.id);
     } catch {
       setCopied("error");
@@ -148,18 +146,12 @@ LessonBilly`
 
       {steps.map(step => (
         <details key={step.title}>
-          <summary>
-            {step.title}
-          </summary>
+          <summary>{step.title}</summary>
 
           <ol>
-            {step.instructions.map(
-              (item, i) => (
-                <li key={i}>
-                  {item}
-                </li>
-              )
-            )}
+            {step.instructions.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
           </ol>
         </details>
       ))}
@@ -175,9 +167,7 @@ LessonBilly`
             key={item.id}
           >
             <div className="lb-message-top">
-              <strong>
-                {item.title}
-              </strong>
+              <strong>{item.title}</strong>
 
               <button
                 type="button"
@@ -185,15 +175,14 @@ LessonBilly`
                 onClick={() => copy(item)}
               >
                 <Copy size={15} />
+
                 {copied === item.id
                   ? "Copied"
                   : "Copy message"}
               </button>
             </div>
 
-            <pre>
-              {item.body}
-            </pre>
+            <pre>{item.body}</pre>
           </div>
         ))}
 
@@ -211,9 +200,7 @@ LessonBilly`
       >
         <ShieldCheck
           size={15}
-          style={{
-            verticalAlign: "middle"
-          }}
+          style={{ verticalAlign: "middle" }}
         />
         Protect student records, limit Drive
         access and complete applicable parental
@@ -227,6 +214,7 @@ LessonBilly`
           overflow: hidden;
           margin-top: 10px;
         }
+
         .lb-guide summary {
           cursor: pointer;
           background: #f6f8ff;
@@ -235,20 +223,24 @@ LessonBilly`
           font-weight: 800;
           color: #294067;
         }
+
         .lb-guide ol {
           padding: 12px 24px 13px 42px;
           margin: 0;
         }
+
         .lb-guide li {
           color: #586a85;
           line-height: 1.65;
           font-size: 13px;
           margin: 8px 0;
         }
+
         .lb-message {
           padding: 14px 18px;
           border-top: 1px solid #edf1f8;
         }
+
         .lb-message-top {
           display: flex;
           justify-content: space-between;
@@ -256,6 +248,7 @@ LessonBilly`
           gap: 9px;
           flex-wrap: wrap;
         }
+
         .lb-message pre {
           padding: 12px;
           background: #f7f9fc;
