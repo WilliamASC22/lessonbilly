@@ -24,6 +24,7 @@ const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
 export default function LearningNeedsAssistant() {
   const [grade, setGrade] = useState("Grade 8");
   const [subjectChoice, setSubjectChoice] = useState("auto");
+  const [otherSubject, setOtherSubject] = useState("");
   const [goal, setGoal] = useState("catch_up");
   const [hours, setHours] = useState("2");
   const [challenge, setChallenge] = useState("");
@@ -43,6 +44,7 @@ export default function LearningNeedsAssistant() {
     if (description.length < 10) return;
 
     const prediction = predictLearningArea(description);
+
     const subject =
       subjectChoice === "auto"
         ? prediction.area
@@ -54,7 +56,8 @@ export default function LearningNeedsAssistant() {
         gradeLevel: grade,
         challenge: description,
         goal,
-        weeklyHours: Number(hours)
+        weeklyHours: Number(hours),
+        otherSubject: otherSubject.trim()
       }),
       uncertain:
         subjectChoice === "auto" && prediction.uncertain
@@ -133,6 +136,10 @@ export default function LearningNeedsAssistant() {
                 Grade {i + 1}
               </option>
             ))}
+
+            <option value="College">
+              College
+            </option>
           </select>
         </label>
 
@@ -162,6 +169,24 @@ export default function LearningNeedsAssistant() {
             )}
           </select>
         </label>
+
+        {subjectChoice === "other" && (
+          <label>
+            Which subject?
+
+            <input
+              type="text"
+              required
+              maxLength={60}
+              placeholder="e.g. History, Economics, Programming"
+              value={otherSubject}
+              onChange={event => {
+                setOtherSubject(event.target.value);
+                clearPreviousMatch();
+              }}
+            />
+          </label>
+        )}
 
         <label>
           Main tutoring goal
@@ -423,6 +448,7 @@ export default function LearningNeedsAssistant() {
         }
 
         .lb-match-form select,
+        .lb-match-form input[type="text"],
         .lb-match-form textarea {
           width: 100%;
           border: 1px solid #d9e3f1;
