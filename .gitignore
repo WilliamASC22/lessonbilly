@@ -1,9 +1,28 @@
-
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 
+# Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
+# Cloudflare Worker local secrets
+.dev.vars
+.dev.vars.*
+
+# Private credentials
+*.pem
+*.key
+*service-account*.json
+*serviceAccountKey*.json
+
+# Local development
+.wrangler/
 .DS_Store
+
+# Logs
+*.log
+npm-debug.log*
