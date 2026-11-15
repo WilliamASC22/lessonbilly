@@ -93,45 +93,102 @@ function parseQuizzes(text) {
     .slice(0, 10);
 }
 
+
 async function readPdf(file) {
+  if (!file) {
+    throw new Error("Please choose a PDF file.");
+  }
+
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Use a PDF no larger than 5 MB.");
-  }
-
-  const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-  const pdf = await pdfjs.getDocument({
-    data: new Uint8Array(await file.arrayBuffer())
-  }).promise;
-
-  const pages = Math.min(pdf.numPages, 12);
-  let text = "";
-
-  try {
-    for (let index = 1; index <= pages; index++) {
-      const page = await pdf.getPage(index);
-      const content = await page.getTextContent();
-
-      text +=
-        "\n" +
-        content.items
-          .map(item => item.str || "")
-          .join(" ");
-
-      if (text.length > 11000) break;
-    }
-  } finally {
-    await pdf.destroy();
-  }
-
-  if (!text.trim()) {
     throw new Error(
-      "This PDF has no extractable text. Scanned/image-only PDFs need typed lesson notes instead."
+      "Use a PDF no larger than 5 MB."
     );
   }
 
-  return text.slice(0, 11000);
+  if (
+    !file.name.toLowerCase().endsWith(".pdf")
+  ) {
+    throw new Error(
+      "Only PDF files are supported."
+    );
+  }
+
+  const pdfjs = await import("pdfjs-dist");
+
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    pdfWorkerUrl;
+
+  const fileBytes = new Uint8Array(
+    await file.arrayBuffer()
+  );
+
+  const loadingTask = pdfjs.getDocument({
+    data: fileBytes
+  });
+
+  let extractedText = "";
+
+  try {
+    const pdf = await loadingTask.promise;
+
+    const pagesToRead = Math.min(
+      pdf.numPages,
+      12
+    );
+
+    for (
+      let pageNumber = 1;
+      pageNumber <= pagesToRead;
+      pageNumber++
+    ) {
+      const page = await pdf.getPage(
+        pageNumber
+      );
+
+      const content =
+        await page.getTextContent();
+
+      const pageText = content.items
+        .map(item => item.str || "")
+        .join(" ");
+
+      extractedText +=
+        pageText + "\n\n";
+
+      if (extractedText.length > 11000) {
+        break;
+      }
+    }
+  } finally {
+    // PDF cleanup must not cause an otherwise
+    // successful upload to fail.
+    try {
+      if (
+        typeof loadingTask.destroy ===
+        "function"
+      ) {
+        await loadingTask.destroy();
+      }
+    } catch (cleanupError) {
+      console.warn(
+        "PDF cleanup warning:",
+        cleanupError
+      );
+    }
+  }
+
+  const finalText = extractedText
+    .trim()
+    .slice(0, 11000);
+
+  if (!finalText) {
+    throw new Error(
+      "No readable text was found in this PDF. " +
+      "Use a text-based PDF or paste lesson notes."
+    );
+  }
+
+  return finalText;
 }
 
 export default function PracticeCenter({
