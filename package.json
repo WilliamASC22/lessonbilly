@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.88",
     "firebase": "^12.0.0",
     "lucide-react": "^0.468.0",
     "motion": "^12.0.0",

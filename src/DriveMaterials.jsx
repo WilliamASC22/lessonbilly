@@ -1,6 +1,14 @@
 
-import { useEffect, useState } from "react";
-import { doc, runTransaction } from "firebase/firestore";
+import {
+  useEffect,
+  useState
+} from "react";
+
+import {
+  doc,
+  runTransaction
+} from "firebase/firestore";
+
 import {
   BookOpen,
   ExternalLink,
@@ -8,15 +16,26 @@ import {
   Save,
   Trash2
 } from "lucide-react";
+
 import { db } from "./firebase";
 
+import StudyChat from "./StudyChat.jsx";
+import ClassDelete from "./ClassDelete.jsx";
+
 const SLOTS = [
-  { key: "homeworkDriveUrl", label: "Homework PDF" },
-  { key: "classworkDriveUrl", label: "Classwork PDF" }
+  {
+    key: "homeworkDriveUrl",
+    label: "Homework PDF"
+  },
+  {
+    key: "classworkDriveUrl",
+    label: "Classwork PDF"
+  }
 ];
 
 function normalizeGoogleDriveLink(value) {
   const trimmed = value.trim();
+
   if (!trimmed) return "";
 
   let url;
@@ -44,9 +63,11 @@ function normalizeGoogleDriveLink(value) {
 
   const id =
     match?.[1] ||
-    (url.pathname === "/open"
-      ? url.searchParams.get("id")
-      : "");
+    (
+      url.pathname === "/open"
+        ? url.searchParams.get("id")
+        : ""
+    );
 
   if (
     !id ||
@@ -57,7 +78,9 @@ function normalizeGoogleDriveLink(value) {
     );
   }
 
-  return `https://drive.google.com/file/d/${id}/view`;
+  return (
+    `https://drive.google.com/file/d/${id}/view`
+  );
 }
 
 export default function DriveMaterials({
@@ -65,14 +88,20 @@ export default function DriveMaterials({
   currentClass,
   canEdit = false
 }) {
-  const [drafts, setDrafts] = useState({
-    homeworkDriveUrl: "",
-    classworkDriveUrl: ""
-  });
+  const [drafts, setDrafts] =
+    useState({
+      homeworkDriveUrl: "",
+      classworkDriveUrl: ""
+    });
 
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [busy, setBusy] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
     setDrafts({
@@ -91,7 +120,10 @@ export default function DriveMaterials({
     currentClass?.classworkDriveUrl
   ]);
 
-  async function saveLink(key, clear = false) {
+  async function saveLink(
+    key,
+    clear = false
+  ) {
     if (
       !canEdit ||
       !studentId ||
@@ -103,7 +135,8 @@ export default function DriveMaterials({
     if (
       clear &&
       !window.confirm(
-        "Remove this link from LessonBilly? This will not delete or unshare the PDF in Google Drive."
+        "Remove this link from LessonBilly? " +
+        "The PDF will remain in Google Drive."
       )
     ) {
       return;
@@ -116,7 +149,9 @@ export default function DriveMaterials({
     try {
       const newUrl = clear
         ? ""
-        : normalizeGoogleDriveLink(drafts[key]);
+        : normalizeGoogleDriveLink(
+            drafts[key]
+          );
 
       const ref = doc(
         db,
@@ -127,19 +162,22 @@ export default function DriveMaterials({
       await runTransaction(
         db,
         async transaction => {
-          const snap =
+          const snapshot =
             await transaction.get(ref);
 
-          if (!snap.exists()) {
+          if (!snapshot.exists()) {
             throw new Error(
               "Student record not found."
             );
           }
 
-          const student = snap.data();
+          const student =
+            snapshot.data();
 
-          const list =
-            Array.isArray(student.classes) &&
+          const classes =
+            Array.isArray(
+              student.classes
+            ) &&
             student.classes.length
               ? student.classes
               : [
@@ -149,17 +187,22 @@ export default function DriveMaterials({
                       student.subject ||
                       "General tutoring",
                     meetingUrl:
-                      student.meetingUrl || "",
+                      student.meetingUrl ||
+                      "",
                     nextLessonAt:
-                      student.nextLessonAt || "",
+                      student.nextLessonAt ||
+                      "",
                     durationMinutes:
-                      student.durationMinutes || 60
+                      student.durationMinutes ||
+                      60
                   }
                 ];
 
           if (
-            !list.some(
-              c => c.id === currentClass.id
+            !classes.some(
+              c =>
+                c.id ===
+                currentClass.id
             )
           ) {
             throw new Error(
@@ -167,28 +210,32 @@ export default function DriveMaterials({
             );
           }
 
-          transaction.update(ref, {
-            classes: list.map(c =>
-              c.id === currentClass.id
-                ? {
-                    ...c,
-                    [key]: newUrl
-                  }
-                : c
-            )
-          });
+          transaction.update(
+            ref,
+            {
+              classes:
+                classes.map(c =>
+                  c.id === currentClass.id
+                    ? {
+                        ...c,
+                        [key]: newUrl
+                      }
+                    : c
+                )
+            }
+          );
         }
       );
 
       setMessage(
         clear
-          ? "Link removed from LessonBilly. Manage the PDF's access separately in Google Drive."
+          ? "Link removed from LessonBilly. Manage its Google Drive access separately."
           : "Google Drive link saved for this class."
       );
-    } catch (e) {
+    } catch (error) {
       setError(
-        e?.message ||
-          "Could not update the link."
+        error?.message ||
+        "Could not update the link."
       );
     } finally {
       setBusy(false);
@@ -196,234 +243,260 @@ export default function DriveMaterials({
   }
 
   return (
-    <section className="panel lb-drive-materials">
-      <style>{`
-        .lb-drive-materials {
-          margin-top: 24px;
-        }
-
-        .lb-drive-materials h2 {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          font-size: 19px;
-          margin: 0 0 8px;
-        }
-
-        .lb-drive-materials .lb-drive-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-          margin-top: 18px;
-        }
-
-        .lb-drive-materials .lb-drive-slot {
-          border: 1px solid #e2e9f7;
-          border-radius: 13px;
-          padding: 18px;
-          min-width: 0;
-        }
-
-        .lb-drive-materials .lb-drive-slot h3 {
-          font-size: 15px;
-          margin: 0 0 11px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .lb-drive-materials .lb-drive-input {
-          display: block;
-          width: 100%;
-          border: 1px solid #dce4f1;
-          border-radius: 9px;
-          padding: 11px;
-          font-size: 13px;
-          margin: 10px 0;
-        }
-
-        .lb-drive-materials .lb-drive-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 9px;
-          margin-top: 12px;
-        }
-
-        .lb-drive-materials .lb-drive-button {
-          border: 1px solid #c9d6f5;
-          background: #ecf2ff;
-          color: #345ac0;
-          padding: 9px 12px;
-          border-radius: 9px;
-          font-size: 12px;
-          font-weight: 800;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-        }
-
-        .lb-drive-materials .lb-drive-button.danger {
-          background: #fff2f2;
-          color: #ac4242;
-          border-color: #f0cbcb;
-        }
-
-        .lb-drive-materials .lb-drive-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .lb-drive-materials .lb-drive-empty {
-          color: #8291a8;
-          font-size: 13px;
-          margin: 10px 0 0;
-        }
-
-        .lb-drive-materials .lb-drive-note {
-          font-size: 12px;
-          margin: 12px 0 0;
-          color: #65738a;
-          line-height: 1.6;
-        }
-
-        @media (max-width: 700px) {
-          .lb-drive-materials .lb-drive-grid {
-            grid-template-columns: 1fr;
+    <>
+      <section className="panel lb-drive-materials">
+        <style>{`
+          .lb-drive-materials {
+            margin-top: 24px;
           }
-        }
-      `}</style>
 
-      <h2>
-        <BookOpen size={20} color="#466cde" />
-        Homework and classwork PDFs
-      </h2>
+          .lb-drive-materials h2 {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 19px;
+            margin: 0 0 8px;
+          }
 
-      <p className="muted tiny">
-        {canEdit
-          ? "Upload PDFs to Google Drive, share with the appropriate family as Viewer, and paste the file links here."
-          : "Open the homework or classwork PDF shared by your tutor. Google Drive may ask you to sign in."}
-      </p>
+          .lb-drive-materials .lb-drive-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+          }
 
-      {error && (
-        <div className="alert" role="alert">
-          {error}
-        </div>
-      )}
+          .lb-drive-materials .lb-drive-slot {
+            border: 1px solid #e2e9f7;
+            border-radius: 13px;
+            padding: 18px;
+            min-width: 0;
+          }
 
-      {message && (
-        <div
-          className="success-note"
-          role="status"
-        >
-          {message}
-        </div>
-      )}
+          .lb-drive-materials .lb-drive-slot h3 {
+            font-size: 15px;
+            margin: 0 0 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
 
-      <div className="lb-drive-grid">
-        {SLOTS.map(slot => {
-          const link =
-            currentClass?.[slot.key] || "";
+          .lb-drive-materials .lb-drive-input {
+            display: block;
+            width: 100%;
+            border: 1px solid #dce4f1;
+            border-radius: 9px;
+            padding: 11px;
+            font-size: 13px;
+            margin: 10px 0;
+          }
 
-          return (
-            <div
-              className="lb-drive-slot"
-              key={slot.key}
-            >
-              <h3>
-                <Link2
-                  size={17}
-                  color="#466cde"
-                />
-                {slot.label}
-              </h3>
+          .lb-drive-materials .lb-drive-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 12px;
+          }
 
-              {link ? (
-                <a
-                  className="lb-drive-button"
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink size={16} />
-                  Open PDF in Google Drive
-                </a>
-              ) : (
-                <p className="lb-drive-empty">
-                  No PDF shared for this class yet.
-                </p>
-              )}
+          .lb-drive-materials .lb-drive-button {
+            border: 1px solid #c9d6f5;
+            background: #ecf2ff;
+            color: #345ac0;
+            padding: 9px 12px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+          }
 
-              {canEdit && (
-                <>
-                  <label
-                    className="muted tiny"
-                    htmlFor={`drive-${slot.key}-${studentId}-${currentClass?.id}`}
-                  >
-                    Google Drive file link
-                  </label>
+          .lb-drive-materials .lb-drive-button.danger {
+            background: #fff2f2;
+            color: #ac4242;
+            border-color: #f0cbcb;
+          }
 
-                  <input
-                    className="lb-drive-input"
-                    id={`drive-${slot.key}-${studentId}-${currentClass?.id}`}
-                    type="url"
-                    value={drafts[slot.key]}
-                    placeholder="https://drive.google.com/file/d/.../view"
-                    onChange={event =>
-                      setDrafts(prev => ({
-                        ...prev,
-                        [slot.key]:
-                          event.target.value
-                      }))
-                    }
+          .lb-drive-materials .lb-drive-button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+          }
+
+          .lb-drive-materials .lb-drive-empty {
+            color: #8291a8;
+            font-size: 13px;
+            margin: 10px 0 0;
+          }
+
+          .lb-drive-materials .lb-drive-note {
+            font-size: 12px;
+            margin: 12px 0 0;
+            color: #65738a;
+            line-height: 1.6;
+          }
+
+          @media (max-width: 700px) {
+            .lb-drive-materials .lb-drive-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}</style>
+
+        <h2>
+          <BookOpen
+            size={20}
+            color="#466cde"
+          />
+          Homework and classwork PDFs
+        </h2>
+
+        <p className="muted tiny">
+          {canEdit
+            ? "Upload PDFs to Google Drive, share them with the appropriate family as Viewer, and paste the file links here."
+            : "Open the homework or classwork PDF shared by your tutor. Google Drive may ask you to sign in."}
+        </p>
+
+        {error && (
+          <div
+            className="alert"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
+        {message && (
+          <div
+            className="success-note"
+            role="status"
+          >
+            {message}
+          </div>
+        )}
+
+        <div className="lb-drive-grid">
+          {SLOTS.map(slot => {
+            const link =
+              currentClass?.[slot.key] ||
+              "";
+
+            return (
+              <div
+                className="lb-drive-slot"
+                key={slot.key}
+              >
+                <h3>
+                  <Link2
+                    size={17}
+                    color="#466cde"
                   />
+                  {slot.label}
+                </h3>
 
-                  <div className="lb-drive-actions">
-                    <button
-                      type="button"
-                      className="lb-drive-button"
-                      disabled={busy}
-                      onClick={() =>
-                        saveLink(slot.key)
-                      }
+                {link ? (
+                  <a
+                    className="lb-drive-button"
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink size={16} />
+                    Open PDF in Google Drive
+                  </a>
+                ) : (
+                  <p className="lb-drive-empty">
+                    No PDF shared for this class yet.
+                  </p>
+                )}
+
+                {canEdit && (
+                  <>
+                    <label
+                      className="muted tiny"
+                      htmlFor={`drive-${slot.key}-${studentId}-${currentClass?.id}`}
                     >
-                      <Save size={15} />
-                      {link
-                        ? "Save replacement link"
-                        : "Save link"}
-                    </button>
+                      Google Drive file link
+                    </label>
 
-                    {link && (
+                    <input
+                      className="lb-drive-input"
+                      id={`drive-${slot.key}-${studentId}-${currentClass?.id}`}
+                      type="url"
+                      value={drafts[slot.key]}
+                      placeholder="https://drive.google.com/file/d/.../view"
+                      onChange={event =>
+                        setDrafts(prev => ({
+                          ...prev,
+                          [slot.key]:
+                            event.target.value
+                        }))
+                      }
+                    />
+
+                    <div className="lb-drive-actions">
                       <button
                         type="button"
-                        className="lb-drive-button danger"
+                        className="lb-drive-button"
                         disabled={busy}
                         onClick={() =>
-                          saveLink(slot.key, true)
+                          saveLink(
+                            slot.key
+                          )
                         }
                       >
-                        <Trash2 size={15} />
-                        Remove link
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                        <Save size={15} />
 
-      {canEdit && (
-        <p className="lb-drive-note">
-          Important: Changing or removing a link here
-          does not delete the old file or revoke its
-          sharing permissions in Google Drive. Remove
-          access or trash the old PDF in Google Drive
-          separately. Do not choose "Anyone with the
-          link" for private student materials.
-        </p>
-      )}
-    </section>
+                        {link
+                          ? "Save replacement link"
+                          : "Save link"}
+                      </button>
+
+                      {link && (
+                        <button
+                          type="button"
+                          className="lb-drive-button danger"
+                          disabled={busy}
+                          onClick={() =>
+                            saveLink(
+                              slot.key,
+                              true
+                            )
+                          }
+                        >
+                          <Trash2 size={15} />
+                          Remove link
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {canEdit && (
+          <>
+            <p className="lb-drive-note">
+              Changing or removing a link here
+              does not delete the old file or
+              revoke its Google Drive permissions.
+              Remove access separately in Drive.
+              Do not use Anyone with the link
+              for private student materials.
+            </p>
+
+            <ClassDelete
+              studentId={studentId}
+              currentClass={currentClass}
+            />
+          </>
+        )}
+      </section>
+
+      <StudyChat
+        className={currentClass?.name}
+      />
+    </>
   );
 }

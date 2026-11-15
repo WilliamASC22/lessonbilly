@@ -19,9 +19,11 @@ export default function TutorGuide() {
 
 Hello,
 
-Please open ${site}, choose Portal Login, then Create Parent Account on the right. Register with the email address you provided to me, verify your email, and sign back in.
+Please visit ${site}, choose Portal Login, then Create Parent Account on the right.
 
-I will connect your account to your student's record. You will then be able to select each of their classes to view published grades, feedback, upcoming lesson links, and Google Drive class PDFs.
+Register with the email address you provided to me and verify your email.
+
+I will connect your account to your student's record. You can then view their classes, published grades, tutoring links, and shared PDFs.
 
 Thank you,
 LessonBilly`
@@ -33,11 +35,13 @@ LessonBilly`
 
 Hello,
 
-With your parent or guardian, visit ${site}, select Portal Login, then Create Student Account on the left. Verify your email and sign back in.
+With your parent or guardian, visit ${site}, select Portal Login, then Create Student Account on the left.
 
-I will link your account to your student record. After that, you can select your classes to see published scores, tutoring meeting links, and shared Google Drive PDFs.
+Verify your email and sign back in.
 
-Student accounts for children under 13 should not be created until the required parental notice and consent process has been completed. Parents can use their own accounts in the meantime.
+I will link your account to your student record so you can see your classes, published scores, tutoring links, and homework materials.
+
+For children under 13, student registration should not be used until the required parental notice and consent process is completed.
 
 Thank you,
 LessonBilly`
@@ -49,7 +53,9 @@ LessonBilly`
 
 Hello,
 
-A new assessment has been published in LessonBilly. Sign in at ${site}, select the student's class, and open Grade history to see the score and feedback.
+A new assessment has been published in LessonBilly.
+
+Please sign in at ${site}, select the student's class, and open Grade history to view the score and feedback.
 
 Thank you,
 LessonBilly`
@@ -114,10 +120,6 @@ LessonBilly`
           line-height: 1.65;
         }
 
-        .lb-guide li:last-child {
-          margin-bottom: 0;
-        }
-
         .lb-guide .lb-guide-note {
           background: #fff7e8;
           border-radius: 9px;
@@ -142,10 +144,6 @@ LessonBilly`
         .lb-guide .lb-message {
           padding: 14px 0;
           border-bottom: 1px solid #e9edf5;
-        }
-
-        .lb-guide .lb-message:last-child {
-          border: 0;
         }
 
         .lb-guide .lb-message-head {
@@ -180,42 +178,39 @@ LessonBilly`
       </h2>
 
       <p className="muted">
-        Open a section for instructions.
-        The guide is visible only in your tutor dashboard.
+        Expand a section for instructions.
+        This guide is available in the tutor dashboard.
       </p>
 
       <details>
         <summary>
-          1. Enroll a student and connect their accounts
+          1. Enroll a student and connect accounts
         </summary>
 
         <div className="lb-guide-body">
           <ol>
             <li>
-              Ask a parent to create a Parent Account
-              and verify their email.
+              Ask the parent to register and verify
+              their email.
             </li>
             <li>
-              In Add a student, enter the student's name,
-              parent's registered email, grade level,
-              and first class.
+              Add the student's name, registered parent
+              email, grade level, and first subject.
             </li>
             <li>
-              Optionally link an approved, verified
-              student account in Student account access.
+              Optionally link an approved student
+              account in Student account access.
             </li>
             <li>
-              Have the parent and student sign in
-              separately to verify their assigned records.
+              Have the family test their accounts.
             </li>
           </ol>
 
           <p className="lb-guide-note">
             <ShieldCheck size={15} />
-            For children under 13, don't invite independent
-            registration without the required parental
-            notice and consent process. A checkbox alone
-            does not establish consent.
+            For children under 13, complete the
+            necessary parental notice and consent
+            process before independent registration.
           </p>
         </div>
       </details>
@@ -227,18 +222,15 @@ LessonBilly`
 
         <div className="lb-guide-body">
           <ol>
-            <li>
-              Under Your students, select the student.
-            </li>
+            <li>Select the student.</li>
             <li>
               Open Student details and classes.
             </li>
             <li>
-              Change Student grade level.
+              Change the grade level.
             </li>
             <li>
-              Click Save grade level. Existing classes
-              and grades are preserved.
+              Click Save grade level.
             </li>
           </ol>
         </div>
@@ -246,29 +238,52 @@ LessonBilly`
 
       <details>
         <summary>
-          3. Add, rename, or switch classes
+          3. Add, rename, or delete classes
         </summary>
 
         <div className="lb-guide-body">
           <ol>
-            <li>Select the student.</li>
             <li>
-              Type a new subject in Add another class
-              and click Add class.
+              Select a student under Your students.
             </li>
             <li>
-              Use the class buttons to switch between
-              subjects such as Math and English.
+              Enter a subject in Add another class,
+              then click Add class.
             </li>
             <li>
-              To rename a class, edit Rename selected
-              class and click Rename class.
+              Choose a class using its class button.
             </li>
             <li>
-              Grades, scheduled lessons, and PDF links
-              belong to whichever class is selected.
+              To rename it, use Rename selected class.
+            </li>
+            <li>
+              To delete it, scroll down to Homework
+              and classwork PDFs. Find Remove student
+              from this class.
+            </li>
+            <li>
+              Click Delete class and its grades.
+            </li>
+            <li>
+              Confirm the warning. Then type DELETE
+              followed by the exact class name.
+            </li>
+            <li>
+              The class and its assessments will be
+              permanently deleted from Firestore.
+              At least one class must remain.
+            </li>
+            <li>
+              Delete or unshare old PDFs separately
+              in Google Drive.
             </li>
           </ol>
+
+          <p className="lb-guide-note">
+            Deleting a class is permanent.
+            The student's other classes and
+            LessonBilly account remain intact.
+          </p>
         </div>
       </details>
 
@@ -279,18 +294,21 @@ LessonBilly`
 
         <div className="lb-guide-body">
           <ol>
-            <li>Select the student and correct class.</li>
             <li>
-              Enter assessment title, earned points,
-              possible points, and optional feedback.
-            </li>
-            <li>Click Save draft grade.</li>
-            <li>
-              Click Publish in assessment history when
-              the result is ready for the family.
+              Select the student and correct class.
             </li>
             <li>
-              Use Email parent to notify the family manually.
+              Enter assessment title, points,
+              and optional feedback.
+            </li>
+            <li>
+              Click Save draft grade.
+            </li>
+            <li>
+              Click Publish when the grade is ready.
+            </li>
+            <li>
+              Notify the parent manually.
             </li>
           </ol>
         </div>
@@ -303,82 +321,106 @@ LessonBilly`
 
         <div className="lb-guide-body">
           <ol>
-            <li>Select the student and class.</li>
-            <li>Create a Google Meet link.</li>
             <li>
-              Enter the link, date, time, and lesson duration.
+              Select the student and class.
             </li>
             <li>
-              Click Save lesson. The family will see
-              the meeting details under that class.
+              Create a Google Meet link.
+            </li>
+            <li>
+              Enter the meeting link, date, time,
+              and duration.
+            </li>
+            <li>
+              Click Save lesson.
             </li>
           </ol>
-
-          <p className="muted tiny">
-            LessonBilly doesn't record or automatically
-            end Google Meet sessions.
-          </p>
         </div>
       </details>
 
       <details>
         <summary>
-          6. Share homework and classwork PDFs using Google Drive
+          6. Share homework and classwork PDFs
         </summary>
 
         <div className="lb-guide-body">
           <ol>
             <li>
-              Upload the PDF to your own Google Drive account.
+              Upload the PDF to Google Drive.
             </li>
             <li>
-              Right-click the PDF, select Share,
-              and keep General access set to Restricted.
+              Set sharing to Restricted.
             </li>
             <li>
-              Add the student's and parent's Google Account
-              email addresses as Viewers. They may use
-              a different email from their LessonBilly account.
+              Add the family Google accounts
+              as Viewers.
             </li>
             <li>
-              Click Copy link in Google Drive.
+              Copy the Google Drive file link.
             </li>
             <li>
-              Back in LessonBilly, select the student and
-              class, paste the link into Homework PDF
-              or Classwork PDF, and click Save link.
+              In LessonBilly, select the student
+              and class.
             </li>
             <li>
-              To replace a PDF, upload a new file to Drive,
-              share it with the family, and save the
-              replacement link.
+              Paste the link into Homework PDF
+              or Classwork PDF.
             </li>
             <li>
-              To remove a PDF, click Remove link in
-              LessonBilly and separately delete the old
-              file or revoke its sharing in Google Drive.
+              Click Save link.
+            </li>
+            <li>
+              To replace materials, save a new link.
+              Delete or unshare the old Google Drive
+              file separately.
+            </li>
+          </ol>
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          7. Optional on-device AI study helper
+        </summary>
+
+        <div className="lb-guide-body">
+          <ol>
+            <li>
+              Select a student and class.
+            </li>
+            <li>
+              Scroll to On-device AI study helper.
+            </li>
+            <li>
+              Click Start local AI.
+            </li>
+            <li>
+              Allow the model to download to
+              the browser.
+            </li>
+            <li>
+              Ask short practice questions.
+            </li>
+            <li>
+              Use Clear chat to clear the visible
+              conversation.
             </li>
           </ol>
 
           <p className="lb-guide-note">
-            <ShieldCheck size={15} />
-            Do not choose Anyone with the link for private
-            student materials. LessonBilly controls who can
-            see the link, but Google Drive controls who can
-            open the file.
-          </p>
-
-          <p className="muted tiny">
-            Only the tutor can save or remove links in
-            LessonBilly. Students and parents can open
-            the files but cannot edit the saved links.
+            The AI runs locally, so it does not use
+            Cloudflare's daily AI quota. However,
+            it requires a compatible device and
+            may give incorrect answers. It cannot
+            read PDFs or grade student work.
+            Do not enter personal information.
           </p>
         </div>
       </details>
 
       <details>
         <summary>
-          7. Copy messages for parents and students
+          8. Copy messages for parents and students
         </summary>
 
         <div className="lb-guide-body">
@@ -387,8 +429,10 @@ LessonBilly`
               className="lb-message"
               key={item.id}
             >
-              <div className="lb-message-head">
-                <strong>{item.title}</strong>
+              <div className="lb-guide-message-head">
+                <strong>
+                  {item.title}
+                </strong>
 
                 <button
                   className="lb-copy"
@@ -416,7 +460,7 @@ LessonBilly`
           {copied === "error" && (
             <p className="muted">
               Clipboard unavailable.
-              Select and copy the message manually.
+              Copy the message manually.
             </p>
           )}
         </div>
@@ -424,41 +468,32 @@ LessonBilly`
 
       <details>
         <summary>
-          8. Fix account-linking, PDF access, and permission errors
+          9. Troubleshooting
         </summary>
 
         <div className="lb-guide-body">
           <ol>
             <li>
-              If a student profile cannot be found,
-              confirm they registered through Student
-              Sign In, verified their email, and have
-              a Firestore profile with role set to student.
+              If a student account is missing,
+              check their registration and
+              Firestore profile.
             </li>
             <li>
-              If a parent profile cannot be found,
-              verify their registration and registered email.
+              If grades are missing, confirm
+              the correct class and Publish status.
             </li>
             <li>
-              If a grade is missing, check the linked
-              account, selected class, and Publish status.
+              If a PDF cannot open, check Google
+              Drive Viewer permissions.
             </li>
             <li>
-              If a PDF link opens Access denied,
-              confirm the correct Google Account was
-              invited as a Viewer in Google Drive.
-              LessonBilly sign-in does not grant Google
-              Drive permission automatically.
+              If Firestore denies access, verify
+              the published rules and tutor UID.
             </li>
             <li>
-              If a PDF is outdated, replace its link
-              in LessonBilly and remove access to the
-              old file in Drive.
-            </li>
-            <li>
-              If Firebase denies access, check your
-              published Firestore rules and the full
-              tutor UID in firebase.js.
+              If AI does not load, check WebGPU
+              support and available device memory.
+              Local AI is optional.
             </li>
           </ol>
         </div>
