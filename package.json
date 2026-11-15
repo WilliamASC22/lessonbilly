@@ -1,3 +1,4 @@
+
 {
   "name": "lessonbilly",
   "private": true,
@@ -14,7 +15,6 @@
     "motion": "^12.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@mlc-ai/web-llm": "^0.2.88",
     "pdfjs-dist": "^6.5.438"
   },
   "devDependencies": {

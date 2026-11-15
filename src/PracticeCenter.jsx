@@ -1,15 +1,14 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpenCheck,
-  BrainCircuit,
   CheckCircle2,
   FileUp,
   Layers,
   Plus,
-  Send,
-  Sparkles
+  WandSparkles
 } from "lucide-react";
+
 import {
   collection,
   doc,
@@ -20,28 +19,41 @@ import {
   setDoc,
   where
 } from "firebase/firestore";
+
 import { db } from "./firebase";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-const MODEL = "SmolLM2-360M-Instruct-q4f32_1-MLC";
-const emptyCard = () => ({ front: "", back: "" });
+const emptyCard = () => ({
+  front: "",
+  back: ""
+});
+
 const emptyQuiz = () => ({
   prompt: "",
   options: ["", "", "", ""],
   answerIndex: null,
   explanation: ""
 });
-const tenCards = () => Array.from({ length: 10 }, emptyCard);
-const tenQuizzes = () => Array.from({ length: 10 }, emptyQuiz);
-const trim = value => String(value || "").trim();
+
+const tenCards = () =>
+  Array.from({ length: 10 }, emptyCard);
+
+const tenQuizzes = () =>
+  Array.from({ length: 10 }, emptyQuiz);
+
+const trim = value =>
+  String(value || "").trim();
 
 const classList = student =>
-  Array.isArray(student?.classes) && student.classes.length
+  Array.isArray(student?.classes) &&
+  student.classes.length
     ? student.classes
     : [
         {
           id: "original",
-          name: student?.subject || "General tutoring"
+          name:
+            student?.subject ||
+            "General tutoring"
         }
       ];
 
@@ -49,18 +61,28 @@ function parseFlashcards(text) {
   return text
     .split(/\r?\n/)
     .map(line =>
-      line.replace(/^\s*\d+[.)]\s*/, "").trim()
+      line
+        .replace(/^\s*\d+[.)]\s*/, "")
+        .trim()
     )
-    .filter(line => /^CARD\s*\|/i.test(line))
+    .filter(line =>
+      /^CARD\s*\|/i.test(line)
+    )
     .map(line => {
-      const parts = line.split("|").map(trim);
+      const parts = line
+        .split("|")
+        .map(trim);
 
       return {
         front: parts[1] || "",
-        back: parts.slice(2).join(" | ") || ""
+        back:
+          parts.slice(2).join(" | ") ||
+          ""
       };
     })
-    .filter(card => card.front && card.back)
+    .filter(card =>
+      card.front && card.back
+    )
     .slice(0, 10);
 }
 
@@ -68,11 +90,18 @@ function parseQuizzes(text) {
   return text
     .split(/\r?\n/)
     .map(line =>
-      line.replace(/^\s*\d+[.)]\s*/, "").trim()
+      line
+        .replace(/^\s*\d+[.)]\s*/, "")
+        .trim()
     )
-    .filter(line => /^QUIZ\s*\|/i.test(line))
+    .filter(line =>
+      /^QUIZ\s*\|/i.test(line)
+    )
     .map(line => {
-      const parts = line.split("|").map(trim);
+      const parts = line
+        .split("|")
+        .map(trim);
+
       const answer = Number(parts[6]);
 
       return {
@@ -83,85 +112,306 @@ function parseQuizzes(text) {
           parts[4] || "",
           parts[5] || ""
         ],
-        answerIndex: [1, 2, 3, 4].includes(answer)
-          ? answer - 1
-          : null,
-        explanation: parts.slice(7).join(" | ") || ""
+        answerIndex:
+          [1, 2, 3, 4].includes(answer)
+            ? answer - 1
+            : null,
+        explanation:
+          parts.slice(7).join(" | ") ||
+          ""
       };
     })
-    .filter(q => q.prompt && q.options.every(Boolean))
+    .filter(q =>
+      q.prompt &&
+      q.options.every(Boolean)
+    )
     .slice(0, 10);
 }
 
+// Extract explicit question-and-answer pairs.
+// Do not guess answers from arbitrary notes.
+function extractStudyPairs(text) {
+  const pairs = [
+    ...parseFlashcards(text)
+  ];
 
-async function readPdf(file) {
-  if (!file) {
-    throw new Error("Please choose a PDF file.");
+  const seen = new Set(
+    pairs.map(p =>
+      p.front.toLowerCase()
+    )
+  );
+
+  const lines = text
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  let pending = "";
+
+  function add(front, back) {
+    const question = trim(front).slice(
+      0,
+      500
+    );
+
+    const answer = trim(back).slice(
+      0,
+      700
+    );
+
+    if (
+      !question ||
+      !answer ||
+      seen.has(question.toLowerCase())
+    ) {
+      return;
+    }
+
+    pairs.push({
+      front: question,
+      back: answer
+    });
+
+    seen.add(
+      question.toLowerCase()
+    );
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  for (const line of lines) {
+    if (
+      /^(CARD|QUIZ)\s*\|/i.test(line)
+    ) {
+      continue;
+    }
+
+    const qa = line.match(
+      /^(?:Q(?:uestion)?\s*[:.-]\s*)(.+?)\s*\|\s*(.+)$/i
+    );
+
+    if (qa) {
+      add(qa[1], qa[2]);
+      pending = "";
+      continue;
+    }
+
+    const pipe = line.match(
+      /^(.{5,200}\?)\s*\|\s*(.{2,500})$/
+    );
+
+    if (pipe) {
+      add(pipe[1], pipe[2]);
+      pending = "";
+      continue;
+    }
+
+    const ask = line.match(
+      /^(?:Q(?:uestion)?|Front)\s*(?:\d+)?\s*[:.-]\s*(.+)$/i
+    );
+
+    if (ask) {
+      pending = ask[1];
+      continue;
+    }
+
+    const answer = line.match(
+      /^(?:A(?:nswer)?|Back)\s*(?:\d+)?\s*[:.-]\s*(.+)$/i
+    );
+
+    if (answer && pending) {
+      add(pending, answer[1]);
+      pending = "";
+      continue;
+    }
+
+    const definition = line.match(
+      /^([^:?!]{3,60}):\s*(.{8,450})$/
+    );
+
+    if (
+      definition &&
+      !/^((step|example|chapter|page|topic|lesson|grade|subject|note|instructions)\b)/i.test(
+        definition[1]
+      )
+    ) {
+      add(
+        `Explain ${definition[1].trim()}.`,
+        definition[2]
+      );
+
+      pending = "";
+    }
+  }
+
+  return pairs.slice(0, 10);
+}
+
+function draftFromNotes(text) {
+  const flashcards =
+    extractStudyPairs(text);
+
+  const explicitQuiz =
+    parseQuizzes(text);
+
+  const quizzes = [
+    ...explicitQuiz
+  ];
+
+  if (
+    quizzes.length === 0 &&
+    flashcards.length >= 4
+  ) {
+    flashcards.forEach(
+      (card, index) => {
+        if (
+          quizzes.length === 10
+        ) {
+          return;
+        }
+
+        const otherAnswers =
+          flashcards
+            .filter(
+              (item, i) =>
+                i !== index &&
+                item.back.toLowerCase() !==
+                  card.back.toLowerCase()
+            )
+            .map(item => item.back)
+            .filter(
+              (answer, i, all) =>
+                all.findIndex(
+                  a =>
+                    a.toLowerCase() ===
+                    answer.toLowerCase()
+                ) === i
+            );
+
+        if (
+          otherAnswers.length < 3
+        ) {
+          return;
+        }
+
+        const distractors = [
+          0, 1, 2
+        ].map(
+          offset =>
+            otherAnswers[
+              (index * 3 + offset) %
+              otherAnswers.length
+            ]
+        );
+
+        const answerIndex =
+          index % 4;
+
+        const options = [
+          ...distractors
+        ];
+
+        options.splice(
+          answerIndex,
+          0,
+          card.back
+        );
+
+        quizzes.push({
+          prompt: card.front,
+          options: options.map(
+            x => x.slice(0, 250)
+          ),
+          answerIndex,
+          explanation:
+            "Based on the answer provided in your lesson notes. Verify all choices before publishing."
+        });
+      }
+    );
+  }
+
+  return {
+    flashcards,
+    quizzes: quizzes.slice(0, 10)
+  };
+}
+
+// Read text-based PDFs only.
+// The PDF is not uploaded to Firebase or Drive.
+async function readPdf(file) {
+  if (
+    !file.name
+      .toLowerCase()
+      .endsWith(".pdf")
+  ) {
     throw new Error(
-      "Use a PDF no larger than 5 MB."
+      "Choose a PDF file."
     );
   }
 
   if (
-    !file.name.toLowerCase().endsWith(".pdf")
+    !file.size ||
+    file.size >
+      5 * 1024 * 1024
   ) {
     throw new Error(
-      "Only PDF files are supported."
+      "Use a PDF between 1 byte and 5 MB."
     );
   }
 
-  const pdfjs = await import("pdfjs-dist");
+  const pdfjs = await import(
+    "pdfjs-dist"
+  );
 
   pdfjs.GlobalWorkerOptions.workerSrc =
     pdfWorkerUrl;
 
-  const fileBytes = new Uint8Array(
-    await file.arrayBuffer()
-  );
+  const loadingTask =
+    pdfjs.getDocument({
+      data: new Uint8Array(
+        await file.arrayBuffer()
+      )
+    });
 
-  const loadingTask = pdfjs.getDocument({
-    data: fileBytes
-  });
-
-  let extractedText = "";
+  let text = "";
 
   try {
-    const pdf = await loadingTask.promise;
+    const pdf =
+      await loadingTask.promise;
 
-    const pagesToRead = Math.min(
+    const pages = Math.min(
       pdf.numPages,
       12
     );
 
     for (
-      let pageNumber = 1;
-      pageNumber <= pagesToRead;
-      pageNumber++
+      let index = 1;
+      index <= pages;
+      index++
     ) {
-      const page = await pdf.getPage(
-        pageNumber
-      );
+      const page =
+        await pdf.getPage(index);
 
       const content =
         await page.getTextContent();
 
-      const pageText = content.items
-        .map(item => item.str || "")
-        .join(" ");
+      text +=
+        "\n" +
+        content.items
+          .map(
+            item =>
+              (item.str || "") +
+              (item.hasEOL
+                ? "\n"
+                : " ")
+          )
+          .join("");
 
-      extractedText +=
-        pageText + "\n\n";
-
-      if (extractedText.length > 11000) {
+      if (
+        text.length > 11000
+      ) {
         break;
       }
     }
   } finally {
-    // PDF cleanup must not cause an otherwise
-    // successful upload to fail.
     try {
       if (
         typeof loadingTask.destroy ===
@@ -169,26 +419,21 @@ async function readPdf(file) {
       ) {
         await loadingTask.destroy();
       }
-    } catch (cleanupError) {
+    } catch (error) {
       console.warn(
         "PDF cleanup warning:",
-        cleanupError
+        error
       );
     }
   }
 
-  const finalText = extractedText
-    .trim()
-    .slice(0, 11000);
-
-  if (!finalText) {
+  if (!text.trim()) {
     throw new Error(
-      "No readable text was found in this PDF. " +
-      "Use a text-based PDF or paste lesson notes."
+      "This PDF has no selectable text. Paste notes instead."
     );
   }
 
-  return finalText;
+  return text.slice(0, 11000);
 }
 
 export default function PracticeCenter({
@@ -196,28 +441,59 @@ export default function PracticeCenter({
   isTutor,
   role
 }) {
-  const [students, setStudents] = useState([]);
-  const [studentId, setStudentId] = useState("");
-  const [classId, setClassId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [pdfName, setPdfName] = useState("");
-  const [cards, setCards] = useState(tenCards);
-  const [questions, setQuestions] = useState(tenQuizzes);
-  const [published, setPublished] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [modelState, setModelState] = useState("idle");
-  const [progress, setProgress] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [tab, setTab] = useState("flashcards");
-  const [cardIndex, setCardIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [checked, setChecked] = useState({});
+  const [students, setStudents] =
+    useState([]);
 
-  const engine = useRef(null);
+  const [studentId, setStudentId] =
+    useState("");
+
+  const [classId, setClassId] =
+    useState("");
+
+  const [notes, setNotes] =
+    useState("");
+
+  const [pdfName, setPdfName] =
+    useState("");
+
+  const [cards, setCards] =
+    useState(tenCards);
+
+  const [questions, setQuestions] =
+    useState(tenQuizzes);
+
+  const [published, setPublished] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [busy, setBusy] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [notice, setNotice] =
+    useState("");
+
+  const [tab, setTab] =
+    useState("flashcards");
+
+  const [cardIndex, setCardIndex] =
+    useState(0);
+
+  const [flipped, setFlipped] =
+    useState(false);
+
+  const [quizIndex, setQuizIndex] =
+    useState(0);
+
+  const [answers, setAnswers] =
+    useState({});
+
+  const [checked, setChecked] =
+    useState({});
 
   useEffect(() => {
     const studentQuery = isTutor
@@ -235,9 +511,9 @@ export default function PracticeCenter({
 
     return onSnapshot(
       studentQuery,
-      snap => {
+      snapshot => {
         setStudents(
-          snap.docs.map(d => ({
+          snapshot.docs.map(d => ({
             id: d.id,
             ...d.data()
           }))
@@ -250,25 +526,46 @@ export default function PracticeCenter({
         setLoading(false);
       }
     );
-  }, [user.uid, isTutor, role]);
+  }, [
+    user.uid,
+    isTutor,
+    role
+  ]);
 
   useEffect(() => {
-    if (!students.some(s => s.id === studentId)) {
-      setStudentId(students[0]?.id || "");
+    if (
+      !students.some(
+        s => s.id === studentId
+      )
+    ) {
+      setStudentId(
+        students[0]?.id || ""
+      );
     }
-  }, [students, studentId]);
+  }, [
+    students,
+    studentId
+  ]);
 
   const student = students.find(
     s => s.id === studentId
   );
 
-  const classes = classList(student);
+  const classes =
+    classList(student);
 
   const selectedClass =
-    classes.find(c => c.id === classId) || classes[0];
+    classes.find(
+      c => c.id === classId
+    ) || classes[0];
 
   useEffect(() => {
-    if (!studentId || !selectedClass?.id) return;
+    if (
+      !studentId ||
+      !selectedClass?.id
+    ) {
+      return;
+    }
 
     let alive = true;
 
@@ -281,7 +578,6 @@ export default function PracticeCenter({
     setQuestions(tenQuizzes());
     setNotes("");
     setPdfName("");
-
     setTab("flashcards");
     setCardIndex(0);
     setQuizIndex(0);
@@ -298,39 +594,47 @@ export default function PracticeCenter({
         selectedClass.id
       )
     )
-      .then(snap => {
+      .then(snapshot => {
         if (!alive) return;
 
-        if (snap.exists() && snap.data().published) {
-          const data = snap.data();
+        if (
+          snapshot.exists() &&
+          snapshot.data().published
+        ) {
+          const data =
+            snapshot.data();
 
-          setCards(data.flashcards || tenCards());
-          setQuestions(data.questions || tenQuizzes());
+          setCards(
+            data.flashcards ||
+              tenCards()
+          );
+
+          setQuestions(
+            data.questions ||
+              tenQuizzes()
+          );
+
           setPublished(true);
         }
       })
       .catch(e => {
-        if (alive) setError(e.message);
+        if (alive) {
+          setError(e.message);
+        }
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoading(false);
+        }
       });
 
     return () => {
       alive = false;
     };
-  }, [studentId, selectedClass?.id]);
-
-  useEffect(
-    () => () => {
-      try {
-        engine.current?.unload?.();
-      } catch {
-        // Unloading the model is optional.
-      }
-    },
-    []
-  );
+  }, [
+    studentId,
+    selectedClass?.id
+  ]);
 
   function resetPractice() {
     setCardIndex(0);
@@ -340,31 +644,57 @@ export default function PracticeCenter({
     setChecked({});
   }
 
-  function updateCard(index, key, value) {
+  function updateCard(
+    index,
+    key,
+    value
+  ) {
     setCards(old =>
       old.map((card, i) =>
-        i === index ? { ...card, [key]: value } : card
+        i === index
+          ? {
+              ...card,
+              [key]: value
+            }
+          : card
       )
     );
   }
 
-  function updateQuiz(index, key, value) {
-    setQuestions(old =>
-      old.map((q, i) =>
-        i === index ? { ...q, [key]: value } : q
-      )
-    );
-  }
-
-  function updateChoice(index, choice, value) {
+  function updateQuiz(
+    index,
+    key,
+    value
+  ) {
     setQuestions(old =>
       old.map((q, i) =>
         i === index
           ? {
               ...q,
-              options: q.options.map((o, j) =>
-                j === choice ? value : o
-              )
+              [key]: value
+            }
+          : q
+      )
+    );
+  }
+
+  function updateChoice(
+    index,
+    choice,
+    value
+  ) {
+    setQuestions(old =>
+      old.map((q, i) =>
+        i === index
+          ? {
+              ...q,
+              options:
+                q.options.map(
+                  (option, j) =>
+                    j === choice
+                      ? value
+                      : option
+                )
             }
           : q
       )
@@ -372,7 +702,9 @@ export default function PracticeCenter({
   }
 
   async function handlePdf(event) {
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
+
     event.target.value = "";
 
     if (!file) return;
@@ -381,158 +713,106 @@ export default function PracticeCenter({
     setNotice("");
 
     try {
-      if (!file.name.toLowerCase().endsWith(".pdf")) {
-        throw new Error("Choose a PDF file.");
+      if (
+        !file.name
+          .toLowerCase()
+          .endsWith(".pdf")
+      ) {
+        throw new Error(
+          "Choose a PDF file."
+        );
       }
 
-      setNotes(await readPdf(file));
+      setNotes(
+        await readPdf(file)
+      );
+
       setPdfName(file.name);
 
       setNotice(
-        "Extracted text from the PDF. Review it before generating activities."
+        "PDF text extracted. Review it before creating activities."
       );
     } catch (e) {
       setError(e.message);
     }
   }
 
-  async function loadModel() {
-    if (engine.current) return engine.current;
-
-    if (!navigator.gpu) {
-      throw new Error(
-        "AI generation needs a WebGPU-compatible browser and device. You can still write activities manually."
-      );
-    }
-
-    setModelState("loading");
-
-    const webllm = await import("@mlc-ai/web-llm");
-
-    const instance = await webllm.CreateMLCEngine(
-      MODEL,
-      {
-        initProgressCallback: info =>
-          setProgress(
-            info.text || "Preparing on-device AI..."
-          )
-      }
-    );
-
-    engine.current = instance;
-    setModelState("ready");
-
-    return instance;
-  }
-
-  async function generate() {
+  function generate() {
     if (!notes.trim()) {
       setError(
-        "Paste lesson notes or upload a text-based PDF first."
+        "Paste lesson material or upload a text-based PDF first."
       );
       return;
     }
 
-    setBusy(true);
     setError("");
-    setNotice("");
 
-    try {
-      const llm = await loadModel();
-      const lesson = notes.slice(0, 5200);
+    const result =
+      draftFromNotes(notes);
 
-      const cardResponse =
-        await llm.chat.completions.create({
-          messages: [
-            {
-              role: "system",
-              content:
-                "Produce 10 flashcards strictly grounded in the user's lesson material. Output exactly 10 lines in the format CARD|question|answer. No commentary, markdown or invented facts."
-            },
-            {
-              role: "user",
-              content:
-                `Create ${student?.gradeLevel || "school-level"} flashcards for ${selectedClass.name} from these notes only:\n${lesson}`
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 1150
-        });
+    setCards(
+      [
+        ...result.flashcards,
+        ...tenCards()
+      ].slice(0, 10)
+    );
 
-      const quizResponse =
-        await llm.chat.completions.create({
-          messages: [
-            {
-              role: "system",
-              content:
-                "Produce 10 multiple-choice questions strictly based on the supplied notes. Format EACH line as QUIZ|question|choice A|choice B|choice C|choice D|correct choice number 1-4|short explanation. Use no markdown or extra text. Provide exactly 10 lines. Each question must have one unambiguously correct answer."
-            },
-            {
-              role: "user",
-              content:
-                `Write ${student?.gradeLevel || "school-level"} quiz questions for ${selectedClass.name} from these notes only:\n${lesson}`
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 1700
-        });
+    setQuestions(
+      [
+        ...result.quizzes,
+        ...tenQuizzes()
+      ].slice(0, 10)
+    );
 
-      const parsedCards = parseFlashcards(
-        String(
-          cardResponse.choices?.[0]?.message?.content || ""
-        )
-      );
+    setPublished(false);
 
-      const parsedQuizzes = parseQuizzes(
-        String(
-          quizResponse.choices?.[0]?.message?.content || ""
-        )
-      );
-
-      setCards(
-        [...parsedCards, ...tenCards()].slice(0, 10)
-      );
-
-      setQuestions(
-        [...parsedQuizzes, ...tenQuizzes()].slice(0, 10)
-      );
-
-      setPublished(false);
-
+    if (
+      !result.flashcards.length &&
+      !result.quizzes.length
+    ) {
       setNotice(
-        `AI drafted ${parsedCards.length}/10 flashcards and ${parsedQuizzes.length}/10 quiz questions. Check every fact and answer key, then complete or correct the blanks before publishing. Drafts are not saved until you publish.`
+        "No explicit questions and answers were found. Add them as Q: ... then A: ... on separate lines, or fill in the blank templates. The tool will not guess answers."
       );
-    } catch (e) {
-      setModelState("unavailable");
-      setError(
-        `AI generation unavailable: ${e.message}. You can use blank drafts instead.`
+    } else {
+      setNotice(
+        `Created ${result.flashcards.length}/10 flashcard drafts and ${result.quizzes.length}/10 quiz drafts from your notes. Verify every answer and distractor, then finish the remaining blanks before publishing.`
       );
-    } finally {
-      setBusy(false);
     }
   }
 
   async function publish(event) {
     event.preventDefault();
 
-    if (!studentId || !selectedClass) return;
-
     if (
+      !studentId ||
+      !selectedClass
+    ) {
+      return;
+    }
+
+    const invalid =
       cards.length !== 10 ||
       questions.length !== 10 ||
       cards.some(
-        c => !trim(c.front) || !trim(c.back)
+        c =>
+          !trim(c.front) ||
+          !trim(c.back)
       ) ||
       questions.some(
         q =>
           !trim(q.prompt) ||
           q.options?.length !== 4 ||
-          q.options.some(a => !trim(a)) ||
-          !Number.isInteger(q.answerIndex) ||
+          q.options.some(
+            a => !trim(a)
+          ) ||
+          !Number.isInteger(
+            q.answerIndex
+          ) ||
           q.answerIndex < 0 ||
           q.answerIndex > 3
-      )
-    ) {
+      );
+
+    if (invalid) {
       setError(
         "Complete all 10 flashcards and 10 quiz questions, including four answers and a correct-answer selection for each quiz question."
       );
@@ -562,26 +842,53 @@ export default function PracticeCenter({
         ),
         {
           published: true,
-          classId: selectedClass.id,
+          classId:
+            selectedClass.id,
 
-          flashcards: cards.map(c => ({
-            front: trim(c.front).slice(0, 500),
-            back: trim(c.back).slice(0, 700)
-          })),
+          flashcards:
+            cards.map(c => ({
+              front:
+                trim(c.front).slice(
+                  0,
+                  500
+                ),
+              back:
+                trim(c.back).slice(
+                  0,
+                  700
+                )
+            })),
 
-          questions: questions.map(q => ({
-            prompt: trim(q.prompt).slice(0, 500),
-            options: q.options.map(x =>
-              trim(x).slice(0, 250)
-            ),
-            answerIndex: q.answerIndex,
-            explanation: trim(q.explanation).slice(
-              0,
-              600
-            )
-          })),
+          questions:
+            questions.map(q => ({
+              prompt:
+                trim(q.prompt).slice(
+                  0,
+                  500
+                ),
 
-          updatedAt: serverTimestamp()
+              options:
+                q.options.map(x =>
+                  trim(x).slice(
+                    0,
+                    250
+                  )
+                ),
+
+              answerIndex:
+                q.answerIndex,
+
+              explanation:
+                trim(
+                  q.explanation
+                ).slice(
+                  0,
+                  600
+                )
+            })),
+
+          updatedAt:
+            serverTimestamp()
         }
       );
 
@@ -598,15 +905,20 @@ export default function PracticeCenter({
     }
   }
 
-  const quiz = questions[quizIndex];
+  const quiz =
+    questions[quizIndex];
 
-  const answeredCount = Object.keys(checked).length;
+  const answeredCount =
+    Object.keys(checked).length;
 
-  const correctCount = Object.entries(checked).filter(
-    ([index]) =>
-      answers[index] ===
-      questions[Number(index)]?.answerIndex
-  ).length;
+  const correctCount =
+    Object.entries(checked).filter(
+      ([index]) =>
+        answers[index] ===
+        questions[
+          Number(index)
+        ]?.answerIndex
+    ).length;
 
   return (
     <section className="dashboard-page shell lb-practice-page">
@@ -619,14 +931,16 @@ export default function PracticeCenter({
           <h1>
             <BookOpenCheck
               size={30}
-              style={{ verticalAlign: "middle" }}
+              style={{
+                verticalAlign: "middle"
+              }}
             />
             Practice Center
           </h1>
 
           <p>
             {isTutor
-              ? "Generate, review and publish exercises for a specific class."
+              ? "Extract, review and publish practice for a specific class - without running a large AI model."
               : "Practice with activities approved by your tutor. Your answers disappear when you reload."}
           </p>
         </div>
@@ -640,13 +954,19 @@ export default function PracticeCenter({
       </div>
 
       {error && (
-        <div className="alert" role="alert">
+        <div
+          className="alert"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       {notice && (
-        <div className="success-note" role="status">
+        <div
+          className="success-note"
+          role="status"
+        >
           {notice}
         </div>
       )}
@@ -654,6 +974,7 @@ export default function PracticeCenter({
       <div className="panel lb-practice-select">
         <label>
           Student
+
           <select
             value={studentId}
             onChange={e => {
@@ -661,10 +982,15 @@ export default function PracticeCenter({
               setClassId("");
             }}
           >
-            <option value="">Choose a student</option>
+            <option value="">
+              Choose a student
+            </option>
 
             {students.map(s => (
-              <option key={s.id} value={s.id}>
+              <option
+                key={s.id}
+                value={s.id}
+              >
                 {s.name}
               </option>
             ))}
@@ -673,15 +999,25 @@ export default function PracticeCenter({
 
         <label>
           Class
+
           <select
-            value={selectedClass?.id || ""}
-            onChange={e => setClassId(e.target.value)}
+            value={
+              selectedClass?.id || ""
+            }
+            onChange={e =>
+              setClassId(e.target.value)
+            }
             disabled={!student}
           >
-            <option value="">Choose a class</option>
+            <option value="">
+              Choose a class
+            </option>
 
             {classes.map(c => (
-              <option key={c.id} value={c.id}>
+              <option
+                key={c.id}
+                value={c.id}
+              >
                 {c.name}
               </option>
             ))}
@@ -695,26 +1031,48 @@ export default function PracticeCenter({
         </p>
       )}
 
-      {!loading && !students.length && (
-        <div className="panel empty-small">
-          {isTutor
-            ? "Add a student from Dashboard first."
-            : "Ask your tutor to link your account to a student record."}
-        </div>
-      )}
+      {!loading &&
+        !students.length && (
+          <div className="panel empty-small">
+            {isTutor
+              ? "Add a student from Dashboard first."
+              : "Ask your tutor to link your account to a student record."}
+          </div>
+        )}
 
-      {!student || !selectedClass ? null : isTutor ? (
+      {!student ||
+      !selectedClass ? null : isTutor ? (
         <>
           <div className="panel">
-            <h2>Step 1 - Provide lesson material</h2>
+            <h2>
+              Step 1 - Provide lesson material
+            </h2>
 
             <p className="muted tiny">
-              Use a text-based PDF from your device
-              or paste notes. Google Drive PDFs
-              cannot be read automatically from a
-              restricted link. PDF text and lesson
-              notes stay in this browser; only approved
-              practice questions are saved.
+              Upload a text-based PDF or paste
+              notes. For reliable drafts,
+              format each pair on two lines:
+              {" "}
+              <strong>
+                Q: What is a numerator?
+              </strong>
+              {" "}
+              then{" "}
+              <strong>
+                A: The top number in a fraction.
+              </strong>
+              {" "}
+              You can also use{" "}
+              <strong>
+                CARD|question|answer
+              </strong>
+              {" "}
+              or{" "}
+              <strong>
+                QUIZ|question|A|B|C|D|correct number 1-4|explanation
+              </strong>
+              . This tool does not invent
+              answers from unstructured text.
             </p>
 
             <label className="lb-practice-file">
@@ -755,10 +1113,8 @@ export default function PracticeCenter({
                 onClick={generate}
                 disabled={busy}
               >
-                <BrainCircuit size={17} />
-                {busy
-                  ? "Generating drafts..."
-                  : "Generate draft activities locally"}
+                <WandSparkles size={17} />
+                Build drafts from answer pairs
               </button>
 
               <button
@@ -777,181 +1133,218 @@ export default function PracticeCenter({
                 Start with blank drafts
               </button>
             </div>
-
-            {modelState === "loading" && (
-              <p className="muted tiny">
-                Loading AI: {progress}
-              </p>
-            )}
           </div>
 
           <div className="panel lb-practice-editor">
-            <h2>Step 2 - Review and correct every answer</h2>
+            <h2>
+              Step 2 - Review and correct every answer
+            </h2>
 
             <p className="muted tiny">
-              The local model may make mistakes,
-              omit answers, or produce fewer than
-              10 valid drafts. Edit all 10 flashcards
-              and all 10 questions yourself before
-              publishing. Unpublished drafts disappear
+              Quiz distractors are pulled from
+              other answers in your notes and may
+              be misleading or wrong. Verify
+              every choice, question and answer
+              key before publishing. If the
+              source lacks explicit answer pairs,
+              enter questions manually.
+              Unpublished drafts disappear
               on reload.
             </p>
 
             <div className="lb-practice-tabs">
               <button
                 className={
-                  tab === "flashcards" ? "selected" : ""
+                  tab === "flashcards"
+                    ? "selected"
+                    : ""
                 }
-                onClick={() => setTab("flashcards")}
+                onClick={() =>
+                  setTab("flashcards")
+                }
               >
                 10 Flashcards
               </button>
 
               <button
                 className={
-                  tab === "quizzes" ? "selected" : ""
+                  tab === "quizzes"
+                    ? "selected"
+                    : ""
                 }
-                onClick={() => setTab("quizzes")}
+                onClick={() =>
+                  setTab("quizzes")
+                }
               >
                 10 Quiz questions
               </button>
             </div>
 
             {tab === "flashcards"
-              ? cards.map((c, index) => (
-                  <div
-                    className="lb-practice-item"
-                    key={index}
-                  >
-                    <b>Flashcard {index + 1}</b>
+              ? cards.map(
+                  (c, index) => (
+                    <div
+                      className="lb-practice-item"
+                      key={index}
+                    >
+                      <b>
+                        Flashcard {index + 1}
+                      </b>
 
-                    <label>
-                      Question / front
-                      <input
-                        maxLength={500}
-                        value={c.front}
-                        onChange={e =>
-                          updateCard(
-                            index,
-                            "front",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      Answer / back
-                      <textarea
-                        rows={2}
-                        maxLength={700}
-                        value={c.back}
-                        onChange={e =>
-                          updateCard(
-                            index,
-                            "back",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </label>
-                  </div>
-                ))
-              : questions.map((q, index) => (
-                  <div
-                    className="lb-practice-item"
-                    key={index}
-                  >
-                    <b>Question {index + 1}</b>
-
-                    <label>
-                      Question
-                      <input
-                        maxLength={500}
-                        value={q.prompt}
-                        onChange={e =>
-                          updateQuiz(
-                            index,
-                            "prompt",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </label>
-
-                    {q.options.map((choice, i) => (
-                      <label key={i}>
-                        Choice {String.fromCharCode(65 + i)}
+                      <label>
+                        Question / front
 
                         <input
-                          maxLength={250}
-                          value={choice}
+                          maxLength={500}
+                          value={c.front}
                           onChange={e =>
-                            updateChoice(
+                            updateCard(
                               index,
-                              i,
+                              "front",
                               e.target.value
                             )
                           }
                         />
                       </label>
-                    ))}
 
-                    <label>
-                      Correct answer
+                      <label>
+                        Answer / back
 
-                      <select
-                        value={q.answerIndex ?? ""}
-                        onChange={e =>
-                          updateQuiz(
-                            index,
-                            "answerIndex",
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value)
-                          )
-                        }
-                      >
-                        <option value="">
-                          Select the verified answer
-                        </option>
+                        <textarea
+                          rows={2}
+                          maxLength={700}
+                          value={c.back}
+                          onChange={e =>
+                            updateCard(
+                              index,
+                              "back",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  )
+                )
+              : questions.map(
+                  (q, index) => (
+                    <div
+                      className="lb-practice-item"
+                      key={index}
+                    >
+                      <b>
+                        Question {index + 1}
+                      </b>
 
-                        {q.options.map((_, i) => (
-                          <option key={i} value={i}>
+                      <label>
+                        Question
+
+                        <input
+                          maxLength={500}
+                          value={q.prompt}
+                          onChange={e =>
+                            updateQuiz(
+                              index,
+                              "prompt",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      {q.options.map(
+                        (choice, i) => (
+                          <label key={i}>
                             Choice{" "}
-                            {String.fromCharCode(65 + i)}
+                            {String.fromCharCode(
+                              65 + i
+                            )}
+
+                            <input
+                              maxLength={250}
+                              value={choice}
+                              onChange={e =>
+                                updateChoice(
+                                  index,
+                                  i,
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </label>
+                        )
+                      )}
+
+                      <label>
+                        Correct answer
+
+                        <select
+                          value={
+                            q.answerIndex ?? ""
+                          }
+                          onChange={e =>
+                            updateQuiz(
+                              index,
+                              "answerIndex",
+                              e.target.value === ""
+                                ? null
+                                : Number(
+                                    e.target.value
+                                  )
+                            )
+                          }
+                        >
+                          <option value="">
+                            Select the verified answer
                           </option>
-                        ))}
-                      </select>
-                    </label>
 
-                    <label>
-                      Explanation (optional)
+                          {q.options.map(
+                            (_, i) => (
+                              <option
+                                key={i}
+                                value={i}
+                              >
+                                Choice{" "}
+                                {String.fromCharCode(
+                                  65 + i
+                                )}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </label>
 
-                      <textarea
-                        rows={2}
-                        maxLength={600}
-                        value={q.explanation}
-                        onChange={e =>
-                          updateQuiz(
-                            index,
-                            "explanation",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </label>
-                  </div>
-                ))}
+                      <label>
+                        Explanation (optional)
+
+                        <textarea
+                          rows={2}
+                          maxLength={600}
+                          value={q.explanation}
+                          onChange={e =>
+                            updateQuiz(
+                              index,
+                              "explanation",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  )
+                )}
           </div>
 
           <div className="panel">
-            <h2>Step 3 - Publish approved activities</h2>
+            <h2>
+              Step 3 - Publish approved activities
+            </h2>
 
             <p className="muted tiny">
-              This replaces the previously published
-              activity set for this class. Students'
-              practice attempts and answers are not
+              This replaces the previously
+              published activity set for
+              this class. Students' practice
+              attempts and answers are not
               stored in Firestore.
             </p>
 
@@ -978,9 +1371,13 @@ export default function PracticeCenter({
           <div className="lb-practice-tabs">
             <button
               className={
-                tab === "flashcards" ? "selected" : ""
+                tab === "flashcards"
+                  ? "selected"
+                  : ""
               }
-              onClick={() => setTab("flashcards")}
+              onClick={() =>
+                setTab("flashcards")
+              }
             >
               <Layers size={17} />
               Flashcards
@@ -988,9 +1385,13 @@ export default function PracticeCenter({
 
             <button
               className={
-                tab === "quizzes" ? "selected" : ""
+                tab === "quizzes"
+                  ? "selected"
+                  : ""
               }
-              onClick={() => setTab("quizzes")}
+              onClick={() =>
+                setTab("quizzes")
+              }
             >
               <BookOpenCheck size={17} />
               Quiz
@@ -1000,14 +1401,16 @@ export default function PracticeCenter({
           {tab === "flashcards" ? (
             <div className="panel lb-study-card">
               <p className="muted tiny">
-                Flashcard {cardIndex + 1} of {cards.length}
-                {" - "}Click to flip
+                Flashcard {cardIndex + 1} of{" "}
+                {cards.length} - Click to flip
               </p>
 
               <button
                 type="button"
                 className="lb-flashcard"
-                onClick={() => setFlipped(!flipped)}
+                onClick={() =>
+                  setFlipped(!flipped)
+                }
               >
                 <span>
                   {flipped
@@ -1016,7 +1419,9 @@ export default function PracticeCenter({
                 </span>
 
                 <small>
-                  {flipped ? "Answer" : "Question"}
+                  {flipped
+                    ? "Answer"
+                    : "Question"}
                 </small>
               </button>
 
@@ -1024,10 +1429,14 @@ export default function PracticeCenter({
                 <button
                   className="subtle-button"
                   onClick={() => {
-                    setCardIndex(i => Math.max(0, i - 1));
+                    setCardIndex(i =>
+                      Math.max(0, i - 1)
+                    );
                     setFlipped(false);
                   }}
-                  disabled={cardIndex === 0}
+                  disabled={
+                    cardIndex === 0
+                  }
                 >
                   Previous
                 </button>
@@ -1036,11 +1445,17 @@ export default function PracticeCenter({
                   className="subtle-button"
                   onClick={() => {
                     setCardIndex(i =>
-                      Math.min(cards.length - 1, i + 1)
+                      Math.min(
+                        cards.length - 1,
+                        i + 1
+                      )
                     );
                     setFlipped(false);
                   }}
-                  disabled={cardIndex >= cards.length - 1}
+                  disabled={
+                    cardIndex >=
+                    cards.length - 1
+                  }
                 >
                   Next
                 </button>
@@ -1056,30 +1471,36 @@ export default function PracticeCenter({
               <h2>{quiz?.prompt}</h2>
 
               <div className="lb-quiz-options">
-                {quiz?.options.map((option, index) => (
-                  <label key={index}>
-                    <input
-                      type="radio"
-                      checked={
-                        answers[quizIndex] === index
-                      }
-                      disabled={Boolean(
-                        checked[quizIndex]
-                      )}
-                      onChange={() =>
-                        setAnswers(old => ({
-                          ...old,
-                          [quizIndex]: index
-                        }))
-                      }
-                    />
+                {quiz?.options.map(
+                  (option, index) => (
+                    <label key={index}>
+                      <input
+                        type="radio"
+                        checked={
+                          answers[quizIndex] ===
+                          index
+                        }
+                        disabled={Boolean(
+                          checked[quizIndex]
+                        )}
+                        onChange={() =>
+                          setAnswers(old => ({
+                            ...old,
+                            [quizIndex]:
+                              index
+                          }))
+                        }
+                      />
 
-                    <span>
-                      {String.fromCharCode(65 + index)}.{" "}
-                      {option}
-                    </span>
-                  </label>
-                ))}
+                      <span>
+                        {String.fromCharCode(
+                          65 + index
+                        )}
+                        . {option}
+                      </span>
+                    </label>
+                  )
+                )}
               </div>
 
               {checked[quizIndex] && (
@@ -1087,18 +1508,21 @@ export default function PracticeCenter({
                   className="hint-box"
                   style={{
                     marginTop: 15,
-                    justifyContent: "start"
+                    justifyContent:
+                      "start"
                   }}
                 >
                   <strong>
-                    {answers[quizIndex] === quiz.answerIndex
+                    {answers[quizIndex] ===
+                    quiz.answerIndex
                       ? "Correct!"
                       : "Not quite."}
                   </strong>
-
-                  Correct answer:{" "}
-                  {quiz.options[quiz.answerIndex]}.
-                  {" "}{quiz.explanation}
+                  {" "}Correct answer:{" "}
+                  {quiz.options[
+                    quiz.answerIndex
+                  ]}
+                  . {quiz.explanation}
                 </div>
               )}
 
@@ -1106,8 +1530,11 @@ export default function PracticeCenter({
                 <button
                   className="button"
                   disabled={
-                    answers[quizIndex] === undefined ||
-                    Boolean(checked[quizIndex])
+                    answers[quizIndex] ===
+                      undefined ||
+                    Boolean(
+                      checked[quizIndex]
+                    )
                   }
                   onClick={() =>
                     setChecked(old => ({
@@ -1122,9 +1549,13 @@ export default function PracticeCenter({
                 <button
                   className="subtle-button"
                   onClick={() =>
-                    setQuizIndex(i => Math.max(0, i - 1))
+                    setQuizIndex(i =>
+                      Math.max(0, i - 1)
+                    )
                   }
-                  disabled={quizIndex === 0}
+                  disabled={
+                    quizIndex === 0
+                  }
                 >
                   Previous
                 </button>
@@ -1140,7 +1571,8 @@ export default function PracticeCenter({
                     )
                   }
                   disabled={
-                    quizIndex >= questions.length - 1
+                    quizIndex >=
+                    questions.length - 1
                   }
                 >
                   Next
@@ -1148,7 +1580,8 @@ export default function PracticeCenter({
               </div>
 
               <p className="muted tiny">
-                Checked {answeredCount}/{questions.length}
+                Checked {answeredCount}/
+                {questions.length}
                 {" · "}Correct {correctCount}.
                 Reloading clears this session.
               </p>
@@ -1168,22 +1601,18 @@ export default function PracticeCenter({
         .lb-practice-page {
           padding-top: 40px;
         }
-
         .lb-practice-page .panel {
           margin: 20px 0;
         }
-
         .lb-practice-page h2 {
           font-size: 20px;
           margin-bottom: 12px;
         }
-
         .lb-practice-select {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
         }
-
         .lb-practice-page label {
           display: flex;
           flex-direction: column;
@@ -1192,7 +1621,6 @@ export default function PracticeCenter({
           font-size: 13px;
           font-weight: 800;
         }
-
         .lb-practice-page
         input:not([type=radio]):not([type=file]),
         .lb-practice-page select,
@@ -1205,15 +1633,12 @@ export default function PracticeCenter({
           color: #243659;
           background: white;
         }
-
         .lb-practice-page textarea {
           resize: vertical;
         }
-
         .lb-practice-label {
           margin: 16px 0;
         }
-
         .lb-practice-file {
           display: inline-flex !important;
           align-items: center;
@@ -1225,12 +1650,10 @@ export default function PracticeCenter({
           border-radius: 10px;
           cursor: pointer;
         }
-
         .lb-practice-file input {
           max-width: 220px;
           font-size: 12px;
         }
-
         .lb-practice-actions {
           display: flex;
           align-items: center;
@@ -1238,13 +1661,11 @@ export default function PracticeCenter({
           gap: 11px;
           margin-top: 16px;
         }
-
         .lb-practice-tabs {
           display: flex;
           gap: 10px;
           margin: 14px 0;
         }
-
         .lb-practice-tabs button {
           border: 1px solid #d6e2f7;
           background: #f5f7ff;
@@ -1256,12 +1677,10 @@ export default function PracticeCenter({
           gap: 8px;
           align-items: center;
         }
-
         .lb-practice-tabs button.selected {
           background: #456cdd;
           color: white;
         }
-
         .lb-practice-item {
           padding: 18px;
           margin-top: 12px;
@@ -1270,11 +1689,9 @@ export default function PracticeCenter({
           display: grid;
           gap: 10px;
         }
-
         .lb-practice-item > b {
           color: #24395d;
         }
-
         .lb-flashcard {
           width: 100%;
           min-height: 230px;
@@ -1290,21 +1707,17 @@ export default function PracticeCenter({
           padding: 24px;
           color: #1e3157;
         }
-
         .lb-flashcard span {
           font-size: 24px;
           font-weight: 800;
         }
-
         .lb-flashcard small {
           color: #6b7e9d;
         }
-
         .lb-quiz-options {
           display: grid;
           gap: 10px;
         }
-
         .lb-quiz-options label {
           display: flex;
           flex-direction: row;
@@ -1315,12 +1728,10 @@ export default function PracticeCenter({
           border-radius: 9px;
           font-weight: 600;
         }
-
         @media (max-width: 700px) {
           .lb-practice-select {
             grid-template-columns: 1fr;
           }
-
           .lb-flashcard span {
             font-size: 20px;
           }

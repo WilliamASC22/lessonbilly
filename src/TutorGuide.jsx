@@ -2,7 +2,6 @@
 import { useState } from "react";
 import {
   BookOpenCheck,
-  CheckCircle2,
   Copy,
   ShieldCheck
 } from "lucide-react";
@@ -19,9 +18,9 @@ export default function TutorGuide() {
 
 Hello,
 
-Go to ${site} and choose Portal Login, then Create Parent Account on the right. Verify your email and sign in.
+Visit ${site}, select Portal Login, create a Parent Account and verify your email. I will link your account to your student's record.
 
-I will link your account to your learner's record. You'll be able to see published grades, lessons, shared PDFs, and tutor-approved practice questions.
+You can then see published grades, class PDFs, meeting links, and tutor-reviewed practice activities.
 
 Thank you,
 LessonBilly`
@@ -29,27 +28,29 @@ LessonBilly`
     {
       id: "student",
       title: "Student welcome email",
-      body: `Subject: LessonBilly student portal
+      body: `Subject: Your LessonBilly learning portal
 
 Hello,
 
-With a parent or guardian, visit ${site}, select Portal Login and Create Student Account on the left, verify your email, and sign in. I'll link the account to your class.
+With your parent or guardian, visit ${site}, choose Portal Login, create a Student Account and verify your email. I will link the account to your student record.
 
-You can then view published grades, assignments, class meetings, and Practice Center exercises.
+Once connected, you can open published grades, class materials, meeting links and Practice Center.
 
-Important: For children under 13, registration requires an appropriate parental notice and consent process first.
+For children under 13, complete the required parental notice and consent process first.
 
 Thank you,
 LessonBilly`
     },
     {
       id: "practice",
-      title: "New practice activity notification",
+      title: "New practice activity email",
       body: `Subject: New LessonBilly practice activities
 
 Hello,
 
-I published new flashcards and quiz questions in LessonBilly. Visit ${site}, sign in, and open Practice Center. Select your class and try the activities. Practice answers are not recorded or graded.
+I have published new tutor-reviewed flashcards and quiz questions. Sign in at ${site}, open Practice Center and select your class.
+
+Practice attempts are not saved or counted as grades.
 
 Thank you,
 LessonBilly`
@@ -61,63 +62,67 @@ LessonBilly`
       title: "1. Enroll and connect a family",
       instructions: [
         "Ask the parent to create and verify a Parent Account.",
-        "Add the student in Dashboard with their grade level, class, and registered parent email.",
-        "Optionally connect an approved student account using Student account access.",
-        "Test both accounts with fictional data before real use."
+        "Add the student in Dashboard, using the parent's registered email.",
+        "Optionally link an approved student account using Student account access.",
+        "Test the account links using fictional records before real use."
       ]
     },
     {
       title: "2. Manage classes and grades",
       instructions: [
-        "Select a student, update grade level, and add or rename classes as needed.",
-        "Choose a class before entering grades or a meeting link.",
-        "Save an assessment as Draft, verify its score, then Publish to the family.",
-        "To permanently remove a class, use Delete class below its Google Drive links. The confirmation requires typing its name; deleting its last class is blocked."
+        "Select a student, edit their grade level, and add or rename classes.",
+        "Select the appropriate class before saving grades or scheduling a lesson.",
+        "Review each assessment and select Publish when the family should see it.",
+        "Permanent class deletion uses a typed confirmation. The student's final class cannot be deleted with that button."
       ]
     },
     {
-      title: "3. Share Google Drive PDFs",
+      title: "3. Share Homework and Classwork PDFs",
       instructions: [
-        "Upload homework and classwork PDFs in your Google Drive account.",
-        "Share each file with the correct parent/student Google accounts as Viewer using Restricted access.",
-        "Copy the file link into the correct class in LessonBilly.",
-        "Replacing or removing a link from LessonBilly does not delete or unshare the file in Google Drive. Clean up Drive manually."
+        "Upload PDFs to your own Google Drive account.",
+        "Set access to Restricted and invite the intended family Google accounts as Viewers.",
+        "Save the correct file link under the student's corresponding class.",
+        "If you replace or remove a link, delete or unshare the old Drive file separately."
       ]
     },
     {
-      title: "4. Create tutor-approved practice",
+      title: "4. Create practice without a large AI model",
       instructions: [
-        "Open Practice Center from the top navigation, and choose the student and class.",
-        "Paste lesson notes or upload a text-based PDF from your device. Scanned pages cannot be read automatically.",
-        "Click Generate draft activities locally, or start with blank templates if WebGPU/AI isn't available.",
-        "Review and edit all 10 flashcards, 10 quiz questions, and answer keys. The AI is fallible.",
-        "Click Publish once satisfied. Approved activities remain available; unpublished drafts disappear when you reload.",
-        "Student quiz attempts, flashcard progress and scores are not stored. A refresh resets them."
+        "Open Practice Center and select the student and class.",
+        "Paste explicit answer pairs, using Q: followed by A: on a separate line. CARD|question|answer and QUIZ|question|choice A|choice B|choice C|choice D|correct answer 1-4|explanation also work.",
+        "You may upload a text-based PDF. For scanned or poorly formatted PDFs, paste or type the source text instead.",
+        "Select Build drafts from answer pairs. The tool uses existing answers, not a language model, so it won't make up solutions.",
+        "Check all 10 flashcards and 10 quiz questions. Automatically chosen incorrect choices may need editing.",
+        "Publish only when every fact and answer key has been verified. Unpublished drafts disappear on reload."
       ]
     },
     {
-      title: "5. Schedule lessons",
+      title: "5. Introduce the Learning Needs Assistant to families",
       instructions: [
-        "Select the student and class.",
-        "Create a Google Meet link and enter it with the lesson date and duration.",
-        "Save lesson, then tell the family to use the Join Google Meet button in their dashboard."
+        "On Home, scroll to the animated feature showcase and Find your starting point.",
+        "A parent can select a grade and describe the main academic challenge without creating an account.",
+        "The small, local machine-learning classifier suggests a subject and a two-session starting plan; the parent can override the subject.",
+        "Families can copy the plan or click Ask about tutoring to open a prefilled email. The website does not automatically store their description.",
+        "Treat this as an initial conversation aid, not a professional educational diagnosis."
       ]
     },
     {
-      title: "6. Troubleshoot",
+      title: "6. Troubleshooting",
       instructions: [
-        "Missing student profile: check registration, email verification, and the Firestore profile role.",
-        "Permission denied: make sure tutor UID in firebase.js and published Firestore rules match.",
-        "PDF link denied: verify Google Drive sharing with the exact invited Google account.",
-        "Practice Center missing: confirm the new practice security rule was published and that the tutor published the activity set.",
-        "AI not loading: use a current WebGPU-compatible device or build exercises with blank drafts."
+        "Missing student profile: confirm the account was registered and its email verified.",
+        "Permission denied: confirm the actual tutor UID matches published Firestore rules and firebase.js.",
+        "Drive file access denied: verify which Google account was invited as Viewer.",
+        "No practice drafts: format notes as Q: and A: pairs or fill the blank editors manually.",
+        "Practice Center does not need WebGPU, an API key or a model download anymore."
       ]
     }
   ];
 
   async function copy(item) {
     try {
-      await navigator.clipboard.writeText(item.body);
+      await navigator.clipboard.writeText(
+        item.body
+      );
       setCopied(item.id);
     } catch {
       setCopied("error");
@@ -137,25 +142,31 @@ LessonBilly`
       </div>
 
       <p className="muted tiny">
-        Expand any section for step-by-step
-        instructions and family messages.
+        Expand any section for instructions
+        and copyable client messages.
       </p>
 
       {steps.map(step => (
         <details key={step.title}>
-          <summary>{step.title}</summary>
+          <summary>
+            {step.title}
+          </summary>
 
           <ol>
-            {step.instructions.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            {step.instructions.map(
+              (item, i) => (
+                <li key={i}>
+                  {item}
+                </li>
+              )
+            )}
           </ol>
         </details>
       ))}
 
       <details>
         <summary>
-          7. Copy emails to parents and students
+          7. Copy messages for families
         </summary>
 
         {messages.map(item => (
@@ -164,28 +175,32 @@ LessonBilly`
             key={item.id}
           >
             <div className="lb-message-top">
-              <strong>{item.title}</strong>
+              <strong>
+                {item.title}
+              </strong>
 
               <button
+                type="button"
                 className="subtle-button"
                 onClick={() => copy(item)}
               >
                 <Copy size={15} />
-
                 {copied === item.id
                   ? "Copied"
                   : "Copy message"}
               </button>
             </div>
 
-            <pre>{item.body}</pre>
+            <pre>
+              {item.body}
+            </pre>
           </div>
         ))}
 
         {copied === "error" && (
           <p className="muted">
-            Clipboard unavailable; select and
-            copy the text instead.
+            Clipboard access was blocked.
+            Select and copy the text manually.
           </p>
         )}
       </details>
@@ -196,11 +211,13 @@ LessonBilly`
       >
         <ShieldCheck
           size={15}
-          style={{ verticalAlign: "middle" }}
+          style={{
+            verticalAlign: "middle"
+          }}
         />
-        Protect real student records and complete
-        applicable parental consent requirements
-        before use.
+        Protect student records, limit Drive
+        access and complete applicable parental
+        consent requirements before real enrollment.
       </p>
 
       <style>{`
@@ -210,7 +227,6 @@ LessonBilly`
           overflow: hidden;
           margin-top: 10px;
         }
-
         .lb-guide summary {
           cursor: pointer;
           background: #f6f8ff;
@@ -219,24 +235,20 @@ LessonBilly`
           font-weight: 800;
           color: #294067;
         }
-
         .lb-guide ol {
           padding: 12px 24px 13px 42px;
           margin: 0;
         }
-
         .lb-guide li {
           color: #586a85;
           line-height: 1.65;
           font-size: 13px;
           margin: 8px 0;
         }
-
         .lb-message {
           padding: 14px 18px;
           border-top: 1px solid #edf1f8;
         }
-
         .lb-message-top {
           display: flex;
           justify-content: space-between;
@@ -244,7 +256,6 @@ LessonBilly`
           gap: 9px;
           flex-wrap: wrap;
         }
-
         .lb-message pre {
           padding: 12px;
           background: #f7f9fc;

@@ -5,68 +5,81 @@ import {
   AnimatePresence,
   useReducedMotion
 } from "motion/react";
+
 import {
   BookOpen,
   CheckCircle2,
   FileText,
   GraduationCap,
   Video,
-  Sparkles
+  Sparkles,
+  ListChecks
 } from "lucide-react";
+
+import LearningNeedsAssistant from "./LearningNeedsAssistant.jsx";
 
 const features = [
   {
     label: "Practice Center",
-    title: "Tutor-approved practice",
+    title: "Practice that a real tutor checks",
     description:
-      "Flashcards and multiple-choice quizzes, reviewed by your tutor before students see them.",
+      "Flashcards and multiple-choice quizzes are reviewed by the tutor before students see them.",
     icon: GraduationCap,
-    sample: "Q: 1/2 + 1/4 = ?",
-    detail: "Answer: 3/4 · Practice with feedback"
+    sample: "Math: 1/2 + 1/4 = ?",
+    detail: "3/4 - reviewed answer"
   },
   {
     label: "Class materials",
     title: "Homework in one place",
     description:
-      "A private homework link and classwork link for each class, shared using Google Drive.",
+      "Each class has its own homework and classwork PDFs linked from private Google Drive sharing.",
     icon: FileText,
-    sample: "Homework · Fractions worksheet",
-    detail: "Classwork · Lesson 4 practice"
+    sample: "Homework: Fractions worksheet",
+    detail: "Classwork: Lesson 4 practice"
   },
   {
     label: "Progress tracking",
-    title: "See every improvement",
+    title: "See each step forward",
     description:
-      "View published assessments, feedback and scores by class in a private portal.",
+      "Families can view published assessment scores and feedback for each subject.",
     icon: BookOpen,
-    sample: "Math · Fractions quiz",
-    detail: "18 / 20 points · 90%"
+    sample: "Math: Fractions quiz",
+    detail: "18 / 20 points - example score"
   },
   {
     label: "Online tutoring",
-    title: "Join lessons from anywhere",
+    title: "Join your next lesson easily",
     description:
-      "Class-specific Google Meet links and lesson times make tutoring easier to follow.",
+      "Class-specific Google Meet links and lesson schedules are available in the learner's dashboard.",
     icon: Video,
-    sample: "Next session · Math",
-    detail: "Meet link available in your dashboard"
+    sample: "Next session: Math",
+    detail: "Meeting link in the dashboard"
+  },
+  {
+    label: "Learning plan",
+    title: "A useful starting point before signing up",
+    description:
+      "Describe what is challenging and get a two-session starter plan from our lightweight local classifier below.",
+    icon: ListChecks,
+    sample: "Challenge: Fractions and word problems",
+    detail: "Suggested focus: Math"
   }
 ];
 
 export default function FeatureShowcase({ onTry }) {
   const [active, setActive] = useState(0);
-  const reduced = useReducedMotion();
+  const [paused, setPaused] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reduced) return;
+    if (reducedMotion || paused) return;
 
-    const timer = setInterval(
-      () => setActive(i => (i + 1) % features.length),
-      4500
-    );
+    const timer = setInterval(() => {
+      setActive(i => (i + 1) % features.length);
+    }, 4800);
 
     return () => clearInterval(timer);
-  }, [reduced]);
+  }, [reducedMotion, paused]);
 
   const feature = features[active];
   const Icon = feature.icon;
@@ -80,27 +93,31 @@ export default function FeatureShowcase({ onTry }) {
       <div className="shell">
         <motion.div
           className="section-intro"
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
           <span className="section-kicker">
-            <Sparkles
-              size={14}
-              style={{ verticalAlign: "middle" }}
-            />
+            <Sparkles size={14} />
             MORE THAN A VIDEO CALL
           </span>
 
-          <h2>One place to learn, practice and grow.</h2>
+          <h2>
+            One place to learn, practice and grow.
+          </h2>
 
           <p>
-            Explore the features that help students build
-            confidence between lessons.
+            See how LessonBilly supports students
+            between sessions, then try the free
+            Learning Needs Assistant.
           </p>
         </motion.div>
 
-        <div className="lb-showcase">
+        <div
+          className="lb-showcase"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
           <div
             className="lb-showcase-tabs"
             role="tablist"
@@ -112,9 +129,14 @@ export default function FeatureShowcase({ onTry }) {
               return (
                 <button
                   key={item.label}
+                  type="button"
                   role="tab"
                   aria-selected={index === active}
-                  className={index === active ? "active" : ""}
+                  className={
+                    index === active
+                      ? "active"
+                      : ""
+                  }
                   onClick={() => setActive(index)}
                 >
                   <TabIcon size={18} />
@@ -129,13 +151,22 @@ export default function FeatureShowcase({ onTry }) {
               <motion.div
                 key={feature.label}
                 initial={
-                  reduced ? false : { opacity: 0, y: 16 }
+                  reducedMotion
+                    ? false
+                    : { opacity: 0, y: 14 }
                 }
-                animate={{ opacity: 1, y: 0 }}
+                animate={{
+                  opacity: 1,
+                  y: 0
+                }}
                 exit={
-                  reduced ? {} : { opacity: 0, y: -12 }
+                  reducedMotion
+                    ? {}
+                    : { opacity: 0, y: -10 }
                 }
-                transition={{ duration: 0.3 }}
+                transition={{
+                  duration: 0.25
+                }}
               >
                 <div className="lb-showcase-badge">
                   <Icon size={18} />
@@ -146,7 +177,9 @@ export default function FeatureShowcase({ onTry }) {
                 <p>{feature.description}</p>
 
                 <div className="lb-showcase-example">
-                  <strong>{feature.sample}</strong>
+                  <strong>
+                    {feature.sample}
+                  </strong>
 
                   <span>
                     <CheckCircle2 size={16} />
@@ -159,29 +192,29 @@ export default function FeatureShowcase({ onTry }) {
                   type="button"
                   onClick={onTry}
                 >
-                  Explore the learning portal
+                  Open learning portal
                 </button>
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
+
+        <LearningNeedsAssistant />
       </div>
 
       <style>{`
         .lb-showcase {
           display: grid;
-          grid-template-columns: 260px 1fr;
+          grid-template-columns: 250px 1fr;
           gap: 22px;
           max-width: 960px;
           margin: 0 auto;
         }
-
         .lb-showcase-tabs {
           display: flex;
           flex-direction: column;
           gap: 9px;
         }
-
         .lb-showcase-tabs button {
           display: flex;
           align-items: center;
@@ -194,13 +227,11 @@ export default function FeatureShowcase({ onTry }) {
           color: #53627e;
           font-weight: 800;
         }
-
         .lb-showcase-tabs button.active {
           color: #315bd0;
           border-color: #8ba7f5;
           background: #eaf0ff;
         }
-
         .lb-showcase-window {
           padding: 30px;
           min-height: 290px;
@@ -209,16 +240,14 @@ export default function FeatureShowcase({ onTry }) {
           border-radius: 18px;
           box-shadow: 0 20px 40px #263f9e12;
         }
-
         .lb-showcase-window h3 {
-          font-size: 26px;
+          font-size: 25px;
           margin: 16px 0 9px;
         }
-
         .lb-showcase-window p {
           font-size: 14px;
+          color: #61738e;
         }
-
         .lb-showcase-badge {
           display: flex;
           align-items: center;
@@ -227,7 +256,6 @@ export default function FeatureShowcase({ onTry }) {
           font-size: 12px;
           font-weight: 800;
         }
-
         .lb-showcase-example {
           display: flex;
           flex-direction: column;
@@ -238,11 +266,9 @@ export default function FeatureShowcase({ onTry }) {
           padding: 15px;
           margin: 20px 0;
         }
-
         .lb-showcase-example strong {
           font-size: 15px;
         }
-
         .lb-showcase-example span {
           display: flex;
           gap: 7px;
@@ -250,22 +276,18 @@ export default function FeatureShowcase({ onTry }) {
           font-size: 12px;
           color: #169270;
         }
-
         @media (max-width: 700px) {
           .lb-showcase {
             grid-template-columns: 1fr;
           }
-
           .lb-showcase-tabs {
             flex-direction: row;
             overflow-x: auto;
           }
-
           .lb-showcase-tabs button {
-            min-width: 165px;
+            min-width: 170px;
             flex-shrink: 0;
           }
-
           .lb-showcase-window {
             padding: 21px;
           }
