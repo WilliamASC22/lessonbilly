@@ -2,11 +2,27 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  ArrowRight, BookOpen, CheckCircle2, ChevronRight,
-  GraduationCap, LockKeyhole, Mail, Menu,
-  Plus, ShieldCheck, Sparkles, Star, TrendingUp,
-  Users, Video, X, LogOut, PencilLine, Send
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  GraduationCap,
+  LockKeyhole,
+  Mail,
+  Menu,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Users,
+  Video,
+  X,
+  LogOut,
+  PencilLine,
+  Send
 } from "lucide-react";
+
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -16,12 +32,23 @@ import {
   signOut,
   updateProfile
 } from "firebase/auth";
+
 import {
-  addDoc, collection, doc, getDoc, onSnapshot,
-  query, serverTimestamp, setDoc, updateDoc, where
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where
 } from "firebase/firestore";
+
 import { auth, db, TUTOR_UID } from "./firebase";
 import TutorGuide from "./TutorGuide.jsx";
+import DriveMaterials from "./DriveMaterials.jsx";
 
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
 
@@ -53,23 +80,29 @@ const fadeIn = {
 function readableError(error) {
   const code = error?.code || "";
 
-  if (code.includes("email-already-in-use"))
+  if (code.includes("email-already-in-use")) {
     return "This email already has an account. Try logging in.";
+  }
 
-  if (code.includes("invalid-credential"))
+  if (code.includes("invalid-credential")) {
     return "Incorrect email or password.";
+  }
 
-  if (code.includes("weak-password"))
+  if (code.includes("weak-password")) {
     return "Choose a stronger password (at least 8 characters).";
+  }
 
-  if (code.includes("permission-denied"))
+  if (code.includes("permission-denied")) {
     return "Firebase denied access. Check your Firestore security rules and tutor UID.";
+  }
 
-  if (code.includes("invalid-email"))
+  if (code.includes("invalid-email")) {
     return "Enter a valid email address.";
+  }
 
-  if (code.includes("too-many-requests"))
+  if (code.includes("too-many-requests")) {
     return "Too many attempts. Try again later.";
+  }
 
   return error?.message || "Something went wrong. Please try again.";
 }
@@ -79,7 +112,9 @@ function formatDate(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "Not scheduled";
+  if (Number.isNaN(date.getTime())) {
+    return "Not scheduled";
+  }
 
   return date.toLocaleString([], {
     dateStyle: "medium",
@@ -89,7 +124,9 @@ function formatDate(value) {
 
 function normalizedLessonMinutes(value) {
   const minutes = Number(value);
-  return [60, 90, 120, 150, 180].includes(minutes) ? minutes : 60;
+  return [60, 90, 120, 150, 180].includes(minutes)
+    ? minutes
+    : 60;
 }
 
 function formatLessonDuration(value) {
@@ -145,6 +182,7 @@ function Brand({ onClick }) {
       <span className="brand-symbol">
         L<span>✓</span>
       </span>
+
       <span>
         Lesson<span className="brand-highlight">Billy</span>
       </span>
@@ -178,14 +216,19 @@ function Header({ setPage, user, onLogout }) {
           className={menuOpen ? "nav open" : "nav"}
           aria-label="Main navigation"
         >
-          <button onClick={() => go("home")}>Home</button>
+          <button onClick={() => go("home")}>
+            Home
+          </button>
 
           <a
             href="/#subjects"
             onClick={() => {
               go("home");
               setTimeout(
-                () => document.getElementById("subjects")?.scrollIntoView(),
+                () =>
+                  document
+                    .getElementById("subjects")
+                    ?.scrollIntoView(),
                 0
               );
             }}
@@ -198,7 +241,10 @@ function Header({ setPage, user, onLogout }) {
             onClick={() => {
               go("home");
               setTimeout(
-                () => document.getElementById("pricing")?.scrollIntoView(),
+                () =>
+                  document
+                    .getElementById("pricing")
+                    ?.scrollIntoView(),
                 0
               );
             }}
@@ -211,7 +257,10 @@ function Header({ setPage, user, onLogout }) {
             onClick={() => {
               go("home");
               setTimeout(
-                () => document.getElementById("about")?.scrollIntoView(),
+                () =>
+                  document
+                    .getElementById("about")
+                    ?.scrollIntoView(),
                 0
               );
             }}
@@ -243,7 +292,8 @@ function Header({ setPage, user, onLogout }) {
                 }}
                 title="Sign out"
               >
-                <LogOut size={18} /> Sign out
+                <LogOut size={18} />
+                Sign out
               </button>
             </>
           ) : (
@@ -251,7 +301,8 @@ function Header({ setPage, user, onLogout }) {
               className="button button-small"
               onClick={() => go("auth")}
             >
-              Portal Login <ArrowRight size={16} />
+              Portal Login
+              <ArrowRight size={16} />
             </button>
           )}
         </nav>
@@ -265,18 +316,24 @@ function Home({ setPage }) {
     <main>
       <section className="hero" id="home">
         <div className="shell hero-grid">
-          <motion.div {...fadeIn} className="hero-copy">
+          <motion.div
+            {...fadeIn}
+            className="hero-copy"
+          >
             <div className="eyebrow">
-              <Sparkles size={16} /> PERSONALIZED ONLINE TUTORING
+              <Sparkles size={16} />
+              PERSONALIZED ONLINE TUTORING
             </div>
 
             <h1>
-              Big progress starts with <em>small steps.</em>
+              Big progress starts with{" "}
+              <em>small steps.</em>
             </h1>
 
             <p>
-              One-on-one online tutoring, friendly guidance, and clear
-              updates so families can celebrate every win.
+              One-on-one online tutoring, friendly
+              guidance, and clear updates so families
+              can celebrate every win.
             </p>
 
             <div className="hero-buttons">
@@ -286,7 +343,8 @@ function Home({ setPage }) {
                   "LessonBilly tutoring inquiry"
                 )}`}
               >
-                Ask About Tutoring <ArrowRight size={18} />
+                Ask About Tutoring
+                <ArrowRight size={18} />
               </a>
 
               <button
@@ -296,27 +354,39 @@ function Home({ setPage }) {
                   window.scrollTo(0, 0);
                 }}
               >
-                Learning Portal <ChevronRight size={18} />
+                Learning Portal
+                <ChevronRight size={18} />
               </button>
             </div>
 
             <div className="hero-trust">
               <span>
-                <CheckCircle2 size={17} /> 100% online
+                <CheckCircle2 size={17} />
+                100% online
               </span>
+
               <span>
-                <CheckCircle2 size={17} /> Personal attention
+                <CheckCircle2 size={17} />
+                Personal attention
               </span>
+
               <span>
-                <CheckCircle2 size={17} /> Progress tracking
+                <CheckCircle2 size={17} />
+                Progress tracking
               </span>
             </div>
           </motion.div>
 
           <motion.div
             className="hero-visual"
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{
+              opacity: 0,
+              scale: 0.94
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1
+            }}
             transition={{ duration: 0.7 }}
           >
             <div className="illustration-orb orb-one" />
@@ -330,17 +400,23 @@ function Home({ setPage }) {
 
                 <span>
                   <b>Learning overview</b>
-                  <small>A little progress, every week</small>
+                  <small>
+                    A little progress, every week
+                  </small>
                 </span>
 
-                <span className="online-pill">● On track</span>
+                <span className="online-pill">
+                  ● On track
+                </span>
               </div>
 
               <div className="mock-stats">
                 <div>
                   <small>Practice score</small>
                   <strong>88%</strong>
-                  <span className="positive">↗ Growing</span>
+                  <span className="positive">
+                    ↗ Growing
+                  </span>
                 </div>
 
                 <div>
@@ -356,12 +432,14 @@ function Home({ setPage }) {
                 </span>
 
                 <div className="chart-bars">
-                  {[38, 50, 43, 61, 72, 64, 88].map((n, i) => (
-                    <span
-                      key={i}
-                      style={{ height: `${n}%` }}
-                    />
-                  ))}
+                  {[38, 50, 43, 61, 72, 64, 88].map(
+                    (n, i) => (
+                      <span
+                        key={i}
+                        style={{ height: `${n}%` }}
+                      />
+                    )
+                  )}
                 </div>
 
                 <div className="chart-weeks">
@@ -390,9 +468,12 @@ function Home({ setPage }) {
 
             <div className="floating-note">
               <span>✦</span>
+
               <div>
                 <b>Keep going!</b>
-                <small>Your effort is paying off.</small>
+                <small>
+                  Your effort is paying off.
+                </small>
               </div>
             </div>
           </motion.div>
@@ -405,10 +486,12 @@ function Home({ setPage }) {
             <ShieldCheck size={20} />
             Private student and parent portals
           </span>
+
           <span>
             <Video size={20} />
             Convenient online lessons
           </span>
+
           <span>
             <TrendingUp size={20} />
             Track improvement over time
@@ -416,51 +499,90 @@ function Home({ setPage }) {
         </div>
       </section>
 
-      <section className="section" id="subjects">
+      <section
+        className="section"
+        id="subjects"
+      >
         <div className="shell">
-          <motion.div {...fadeIn} className="section-intro">
-            <span className="section-kicker">WHAT WE SUPPORT</span>
-            <h2>Learning support for every stage.</h2>
+          <motion.div
+            {...fadeIn}
+            className="section-intro"
+          >
+            <span className="section-kicker">
+              WHAT WE SUPPORT
+            </span>
+
+            <h2>
+              Learning support for every stage.
+            </h2>
+
             <p>
-              Focused, patient tutoring that meets students where they are.
+              Focused, patient tutoring that meets
+              students where they are.
             </p>
           </motion.div>
 
           <div className="subject-grid">
-            {subjects.map(({ icon: Icon, title, text }, i) => (
-              <motion.article
-                {...fadeIn}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="subject-card"
-                key={title}
-              >
-                <div className="subject-icon">
-                  <Icon size={27} />
-                </div>
-
-                <h3>{title}</h3>
-                <p>{text}</p>
-
-                <a
-                  href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                    "Question about " + title
-                  )}`}
+            {subjects.map(
+              (
+                {
+                  icon: Icon,
+                  title,
+                  text
+                },
+                i
+              ) => (
+                <motion.article
+                  {...fadeIn}
+                  transition={{
+                    duration: 0.5,
+                    delay: i * 0.1
+                  }}
+                  className="subject-card"
+                  key={title}
                 >
-                  Ask about subjects <ArrowRight size={16} />
-                </a>
-              </motion.article>
-            ))}
+                  <div className="subject-icon">
+                    <Icon size={27} />
+                  </div>
+
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+
+                  <a
+                    href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+                      "Question about " + title
+                    )}`}
+                  >
+                    Ask about subjects
+                    <ArrowRight size={16} />
+                  </a>
+                </motion.article>
+              )
+            )}
           </div>
         </div>
       </section>
 
-      <section className="section soft-section" id="how-it-works">
+      <section
+        className="section soft-section"
+        id="how-it-works"
+      >
         <div className="shell">
-          <motion.div {...fadeIn} className="section-intro">
-            <span className="section-kicker">SIMPLE FROM DAY ONE</span>
-            <h2>How LessonBilly works</h2>
+          <motion.div
+            {...fadeIn}
+            className="section-intro"
+          >
+            <span className="section-kicker">
+              SIMPLE FROM DAY ONE
+            </span>
+
+            <h2>
+              How LessonBilly works
+            </h2>
+
             <p>
-              Stay focused on learning, not complicated technology.
+              Stay focused on learning, not complicated
+              technology.
             </p>
           </motion.div>
 
@@ -469,17 +591,20 @@ function Home({ setPage }) {
               {
                 n: "01",
                 title: "Get in touch",
-                text: "Tell me the student's grade level and the subject they need help with."
+                text:
+                  "Tell me the student's grade level and the subject they need help with."
               },
               {
                 n: "02",
                 title: "Meet online",
-                text: "Join your tutoring session using the private meeting link."
+                text:
+                  "Join your tutoring session using the private meeting link."
               },
               {
                 n: "03",
                 title: "See the progress",
-                text: "Log in to review published assessment scores and feedback."
+                text:
+                  "Log in to review published assessment scores and feedback."
               }
             ].map(s => (
               <motion.div
@@ -496,34 +621,46 @@ function Home({ setPage }) {
         </div>
       </section>
 
-      <section className="section" id="pricing">
+      <section
+        className="section"
+        id="pricing"
+      >
         <div className="shell pricing-layout">
           <motion.div {...fadeIn}>
             <span className="section-kicker">
               STRAIGHTFORWARD PRICING
             </span>
-            <h2>Great tutoring. Clear pricing.</h2>
+
+            <h2>
+              Great tutoring. Clear pricing.
+            </h2>
 
             <p className="pricing-lead">
-              A simple hourly rate, with a recommended weekly routine
-              to help students build confidence and consistency.
+              A simple hourly rate, with a recommended
+              weekly routine to help students build
+              confidence and consistency.
             </p>
 
             <div className="pricing-point">
               <CheckCircle2 size={20} />
               One-on-one remote tutoring
             </div>
+
             <div className="pricing-point">
               <CheckCircle2 size={20} />
               Parent access to published grades
             </div>
+
             <div className="pricing-point">
               <CheckCircle2 size={20} />
               No required long-term contract
             </div>
           </motion.div>
 
-          <motion.div {...fadeIn} className="price-card">
+          <motion.div
+            {...fadeIn}
+            className="price-card"
+          >
             <span className="price-label">
               PERSONALIZED TUTORING
             </span>
@@ -535,10 +672,15 @@ function Home({ setPage }) {
 
             <div className="price-divider" />
 
-            <p>Recommended: 2 hours per week, per subject</p>
+            <p>
+              Recommended: 2 hours per week,
+              per subject
+            </p>
 
             <div className="price-summary">
-              <span>Estimated weekly cost (2 hours)</span>
+              <span>
+                Estimated weekly cost (2 hours)
+              </span>
               <b>$50</b>
             </div>
 
@@ -548,43 +690,60 @@ function Home({ setPage }) {
                 "I am interested in LessonBilly tutoring"
               )}`}
             >
-              Get Started <ArrowRight size={18} />
+              Get Started
+              <ArrowRight size={18} />
             </a>
 
             <small>
-              Subject availability is confirmed before booking.
+              Subject availability is confirmed
+              before booking.
             </small>
           </motion.div>
         </div>
       </section>
 
-      <section className="section soft-section" id="about">
+      <section
+        className="section soft-section"
+        id="about"
+      >
         <div className="shell pricing-layout">
           <motion.div {...fadeIn}>
-            <span className="section-kicker">ABOUT LESSONBILLY</span>
-            <h2>Patient teaching. Clear progress.</h2>
+            <span className="section-kicker">
+              ABOUT LESSONBILLY
+            </span>
+
+            <h2>
+              Patient teaching. Clear progress.
+            </h2>
 
             <p>
-              LessonBilly is an independent online tutoring service built
-              around understandable explanations, consistent practice,
-              and helpful feedback for families.
+              LessonBilly is an independent online
+              tutoring service built around understandable
+              explanations, consistent practice, and
+              helpful feedback for families.
             </p>
 
             <p>
-              Rather than promising instant results, the focus is on
-              building confidence one lesson at a time.
+              Rather than promising instant results,
+              the focus is on building confidence
+              one lesson at a time.
             </p>
           </motion.div>
 
-          <motion.div {...fadeIn} className="panel">
+          <motion.div
+            {...fadeIn}
+            className="panel"
+          >
             <div className="pricing-point">
               <ShieldCheck size={20} />
               Private student and parent dashboards
             </div>
+
             <div className="pricing-point">
               <BookOpen size={20} />
               Lessons tailored to the student
             </div>
+
             <div className="pricing-point">
               <TrendingUp size={20} />
               Visible assessment updates
@@ -594,9 +753,15 @@ function Home({ setPage }) {
       </section>
 
       <section className="section cta-section">
-        <motion.div {...fadeIn} className="shell cta-content">
+        <motion.div
+          {...fadeIn}
+          className="shell cta-content"
+        >
           <Sparkles size={26} />
-          <h2>Ready to make learning click?</h2>
+
+          <h2>
+            Ready to make learning click?
+          </h2>
 
           <p>
             Tell me what your student is working on.
@@ -609,7 +774,8 @@ function Home({ setPage }) {
               "LessonBilly - New tutoring student"
             )}`}
           >
-            Contact LessonBilly <ArrowRight size={18} />
+            Contact LessonBilly
+            <ArrowRight size={18} />
           </a>
         </motion.div>
       </section>
@@ -624,7 +790,8 @@ function PortalAuthCard({ role, onSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [guardianApproved, setGuardianApproved] = useState(false);
+  const [guardianApproved, setGuardianApproved] =
+    useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -641,24 +808,35 @@ function PortalAuthCard({ role, onSuccess }) {
           );
         }
 
-        if (isStudent && !guardianApproved) {
+        if (
+          isStudent &&
+          !guardianApproved
+        ) {
           throw new Error(
             "A parent or guardian must approve the student account."
           );
         }
 
-        const result = await createUserWithEmailAndPassword(
-          auth,
-          email.trim(),
-          password
+        const result =
+          await createUserWithEmailAndPassword(
+            auth,
+            email.trim(),
+            password
+          );
+
+        await updateProfile(
+          result.user,
+          {
+            displayName: name.trim()
+          }
         );
 
-        await updateProfile(result.user, {
-          displayName: name.trim()
-        });
-
         await setDoc(
-          doc(db, "profiles", result.user.uid),
+          doc(
+            db,
+            "profiles",
+            result.user.uid
+          ),
           {
             email: result.user.email,
             name: name.trim(),
@@ -667,14 +845,18 @@ function PortalAuthCard({ role, onSuccess }) {
           }
         );
 
-        await sendEmailVerification(result.user);
+        await sendEmailVerification(
+          result.user
+        );
+
         onSuccess();
       } else {
-        const result = await signInWithEmailAndPassword(
-          auth,
-          email.trim(),
-          password
-        );
+        const result =
+          await signInWithEmailAndPassword(
+            auth,
+            email.trim(),
+            password
+          );
 
         if (
           result.user.emailVerified &&
@@ -683,7 +865,11 @@ function PortalAuthCard({ role, onSuccess }) {
           await result.user.getIdToken(true);
 
           const profile = await getDoc(
-            doc(db, "profiles", result.user.uid)
+            doc(
+              db,
+              "profiles",
+              result.user.uid
+            )
           );
 
           const actualRole =
@@ -725,8 +911,16 @@ function PortalAuthCard({ role, onSuccess }) {
 
       <h2>
         {register
-          ? `Create ${isStudent ? "student" : "parent"} account`
-          : `${isStudent ? "Student" : "Parent"} Sign In`}
+          ? `Create ${
+              isStudent
+                ? "student"
+                : "parent"
+            } account`
+          : `${
+              isStudent
+                ? "Student"
+                : "Parent"
+            } Sign In`}
       </h2>
 
       <p>
@@ -739,7 +933,10 @@ function PortalAuthCard({ role, onSuccess }) {
             : "Follow your child's grades and upcoming lessons."}
       </p>
 
-      <form className="stack-form" onSubmit={submit}>
+      <form
+        className="stack-form"
+        onSubmit={submit}
+      >
         {register && (
           <label>
             Full name
@@ -749,7 +946,9 @@ function PortalAuthCard({ role, onSuccess }) {
               placeholder="Full name"
               autoComplete="name"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e =>
+                setName(e.target.value)
+              }
             />
           </label>
         )}
@@ -762,7 +961,9 @@ function PortalAuthCard({ role, onSuccess }) {
             placeholder="name@example.com"
             autoComplete="email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={e =>
+              setEmail(e.target.value)
+            }
           />
         </label>
 
@@ -774,10 +975,14 @@ function PortalAuthCard({ role, onSuccess }) {
             minLength={register ? 8 : 6}
             placeholder="Your password"
             autoComplete={
-              register ? "new-password" : "current-password"
+              register
+                ? "new-password"
+                : "current-password"
             }
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={e =>
+              setPassword(e.target.value)
+            }
           />
         </label>
 
@@ -787,11 +992,15 @@ function PortalAuthCard({ role, onSuccess }) {
               type="checkbox"
               checked={guardianApproved}
               onChange={e =>
-                setGuardianApproved(e.target.checked)
+                setGuardianApproved(
+                  e.target.checked
+                )
               }
             />
+
             <span>
-              A parent or guardian approves this student account.
+              A parent or guardian approves
+              this student account.
             </span>
           </label>
         )}
@@ -806,12 +1015,16 @@ function PortalAuthCard({ role, onSuccess }) {
             : register
               ? "Create account"
               : "Sign in"}
+
           <ArrowRight size={17} />
         </button>
       </form>
 
       {message && (
-        <div className="form-notice" role="status">
+        <div
+          className="form-notice"
+          role="status"
+        >
           {message}
         </div>
       )}
@@ -833,7 +1046,12 @@ function PortalAuthCard({ role, onSuccess }) {
         >
           {register
             ? "Back to sign in"
-            : `Create ${isStudent ? "Student" : "Parent"} Account`}
+            : `Create ${
+                isStudent
+                  ? "Student"
+                  : "Parent"
+              } Account`}
+
           <ArrowRight size={17} />
         </button>
       </div>
@@ -852,13 +1070,16 @@ function AuthScreen({ onSuccess }) {
           align-items: start;
           max-width: 1050px;
         }
+
         .portal-auth-card {
           height: 100%;
           min-width: 0;
         }
+
         .portal-auth-card h2 {
           font-size: 26px;
         }
+
         .create-account-area {
           margin-top: 23px;
           padding-top: 20px;
@@ -868,12 +1089,14 @@ function AuthScreen({ onSuccess }) {
           gap: 11px;
           align-items: stretch;
         }
+
         .create-account-area span {
           font-size: 13px;
           text-align: center;
           font-weight: 700;
           color: #53627e;
         }
+
         .create-account-button {
           background: #edf2ff !important;
           color: #345bc7 !important;
@@ -881,9 +1104,11 @@ function AuthScreen({ onSuccess }) {
           box-shadow: none !important;
           white-space: normal !important;
         }
+
         .create-account-button:hover {
           background: #e0e9ff !important;
         }
+
         .guardian-confirm {
           flex-direction: row !important;
           align-items: flex-start;
@@ -891,16 +1116,19 @@ function AuthScreen({ onSuccess }) {
           font-weight: 500 !important;
           line-height: 1.5;
         }
+
         .guardian-confirm input {
           width: auto !important;
           margin-top: 3px;
           flex-shrink: 0;
         }
+
         @media (max-width: 800px) {
           .portal-auth-grid {
             grid-template-columns: 1fr;
             max-width: 550px;
           }
+
           .portal-auth-card {
             height: auto;
           }
@@ -920,7 +1148,8 @@ function AuthScreen({ onSuccess }) {
 
         <h1
           style={{
-            fontSize: "clamp(29px,3.4vw,42px)",
+            fontSize:
+              "clamp(29px,3.4vw,42px)",
             margin: "12px 0"
           }}
         >
@@ -928,7 +1157,8 @@ function AuthScreen({ onSuccess }) {
         </h1>
 
         <p style={{ margin: 0 }}>
-          Choose the sign-in option for your account.
+          Choose the sign-in option
+          for your account.
         </p>
       </div>
 
@@ -937,6 +1167,7 @@ function AuthScreen({ onSuccess }) {
           role="student"
           onSuccess={onSuccess}
         />
+
         <PortalAuthCard
           role="parent"
           onSuccess={onSuccess}
@@ -946,7 +1177,10 @@ function AuthScreen({ onSuccess }) {
   );
 }
 
-function VerificationScreen({ user, onVerified }) {
+function VerificationScreen({
+  user,
+  onVerified
+}) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -979,6 +1213,7 @@ function VerificationScreen({ user, onVerified }) {
 
     try {
       await sendEmailVerification(user);
+
       setMessage(
         "Verification email sent. Check your inbox and spam folder."
       );
@@ -993,8 +1228,14 @@ function VerificationScreen({ user, onVerified }) {
     <main className="auth-page">
       <div className="shell verify-wrap">
         <div className="auth-card">
-          <Mail className="verify-symbol" size={34} />
-          <h2>Verify your email</h2>
+          <Mail
+            className="verify-symbol"
+            size={34}
+          />
+
+          <h2>
+            Verify your email
+          </h2>
 
           <p>
             We sent a confirmation link to{" "}
@@ -1007,7 +1248,8 @@ function VerificationScreen({ user, onVerified }) {
             onClick={check}
             disabled={busy}
           >
-            I've verified my email <CheckCircle2 size={18} />
+            I've verified my email
+            <CheckCircle2 size={18} />
           </button>
 
           <button
@@ -1019,7 +1261,10 @@ function VerificationScreen({ user, onVerified }) {
           </button>
 
           {message && (
-            <div className="form-notice" role="status">
+            <div
+              className="form-notice"
+              role="status"
+            >
               {message}
             </div>
           )}
@@ -1029,11 +1274,19 @@ function VerificationScreen({ user, onVerified }) {
   );
 }
 
-function GradeList({ grades, tutor = false, onPublish }) {
+function GradeList({
+  grades,
+  tutor = false,
+  onPublish
+}) {
   if (!grades.length) {
     return (
       <div className="empty-small">
-        No {tutor ? "assessments" : "published grades"} yet.
+        No{" "}
+        {tutor
+          ? "assessments"
+          : "published grades"}{" "}
+        yet.
       </div>
     );
   }
@@ -1041,29 +1294,41 @@ function GradeList({ grades, tutor = false, onPublish }) {
   return (
     <div className="grade-list">
       {grades.map(g => (
-        <div className="grade-item" key={g.id}>
+        <div
+          className="grade-item"
+          key={g.id}
+        >
           <div className="grade-circle">
-            {Math.round((g.earned / g.possible) * 100)}%
+            {Math.round(
+              (g.earned / g.possible) * 100
+            )}%
           </div>
 
           <div className="grade-description">
             <strong>{g.title}</strong>
+
             <small>
               {g.earned} / {g.possible} points
-              {g.feedback ? ` · ${g.feedback}` : ""}
+              {g.feedback
+                ? ` · ${g.feedback}`
+                : ""}
             </small>
           </div>
 
           {tutor && !g.published ? (
             <button
               className="button button-small"
-              onClick={() => onPublish(g.id)}
+              onClick={() =>
+                onPublish(g.id)
+              }
             >
               Publish
             </button>
           ) : (
             <span className="published-label">
-              {g.published ? "Published" : "Draft"}
+              {g.published
+                ? "Published"
+                : "Draft"}
             </span>
           )}
         </div>
@@ -1072,13 +1337,15 @@ function GradeList({ grades, tutor = false, onPublish }) {
   );
 }
 
-// One student record can contain multiple classes.
-// Older student records did not have a classes array.
-// Their original subject and meeting are displayed automatically.
+// Older records without a classes array still work.
+// Their original subject remains the first class.
 function classesForStudent(student) {
   if (!student) return [];
 
-  if (Array.isArray(student.classes) && student.classes.length) {
+  if (
+    Array.isArray(student.classes) &&
+    student.classes.length
+  ) {
     return student.classes
       .filter(
         c =>
@@ -1089,47 +1356,85 @@ function classesForStudent(student) {
       .map(c => ({
         id: c.id,
         name: c.name,
+
+        homeworkDriveUrl:
+          c.homeworkDriveUrl || "",
+
+        classworkDriveUrl:
+          c.classworkDriveUrl || "",
+
         meetingUrl:
           c.meetingUrl ??
-          (c.id === "original" ? student.meetingUrl || "" : ""),
+          (c.id === "original"
+            ? student.meetingUrl || ""
+            : ""),
+
         nextLessonAt:
           c.nextLessonAt ??
-          (c.id === "original" ? student.nextLessonAt || "" : ""),
-        durationMinutes: normalizedLessonMinutes(
-          c.durationMinutes ??
-          (c.id === "original" ? student.durationMinutes : 60)
-        )
+          (c.id === "original"
+            ? student.nextLessonAt || ""
+            : ""),
+
+        durationMinutes:
+          normalizedLessonMinutes(
+            c.durationMinutes ??
+            (c.id === "original"
+              ? student.durationMinutes
+              : 60)
+          )
       }));
   }
 
   return [
     {
       id: "original",
-      name: student.subject || "General tutoring",
-      meetingUrl: student.meetingUrl || "",
-      nextLessonAt: student.nextLessonAt || "",
-      durationMinutes: normalizedLessonMinutes(
-        student.durationMinutes
-      )
+      name:
+        student.subject ||
+        "General tutoring",
+
+      homeworkDriveUrl: "",
+      classworkDriveUrl: "",
+
+      meetingUrl:
+        student.meetingUrl || "",
+
+      nextLessonAt:
+        student.nextLessonAt || "",
+
+      durationMinutes:
+        normalizedLessonMinutes(
+          student.durationMinutes
+        )
     }
   ];
 }
 
-// Old grades without a classId belong to the original class.
 function gradeClassId(grade) {
   return grade.classId || "original";
 }
 
-function StudentTabs({ students, selectedId, setSelectedId }) {
-  if (!students.length) return null;
+function StudentTabs({
+  students,
+  selectedId,
+  setSelectedId
+}) {
+  if (!students.length) {
+    return null;
+  }
 
   return (
     <div className="student-tabs">
       {students.map(s => (
         <button
-          className={selectedId === s.id ? "selected" : ""}
           key={s.id}
-          onClick={() => setSelectedId(s.id)}
+          className={
+            selectedId === s.id
+              ? "selected"
+              : ""
+          }
+          onClick={() =>
+            setSelectedId(s.id)
+          }
         >
           {s.name}
         </button>
@@ -1138,18 +1443,34 @@ function StudentTabs({ students, selectedId, setSelectedId }) {
   );
 }
 
-function LearnerDashboard({ user, role }) {
-  const [students, setStudents] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [grades, setGrades] = useState([]);
-  const [error, setError] = useState("");
+function LearnerDashboard({
+  user,
+  role
+}) {
+  const [students, setStudents] =
+    useState([]);
+
+  const [selectedId, setSelectedId] =
+    useState("");
+
+  const [
+    selectedClassId,
+    setSelectedClassId
+  ] = useState("");
+
+  const [grades, setGrades] =
+    useState([]);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
     const q = query(
       collection(db, "students"),
       where(
-        role === "student" ? "studentUids" : "parentUids",
+        role === "student"
+          ? "studentUids"
+          : "parentUids",
         "array-contains",
         user.uid
       )
@@ -1165,16 +1486,31 @@ function LearnerDashboard({ user, role }) {
           }))
         );
       },
-      e => setError(readableError(e))
+      e => setError(
+        readableError(e)
+      )
     );
-  }, [user.uid, role]);
+  }, [
+    user.uid,
+    role
+  ]);
 
   useEffect(() => {
-    if (!students.some(s => s.id === selectedId)) {
-      setSelectedId(students[0]?.id || "");
+    if (
+      !students.some(
+        s => s.id === selectedId
+      )
+    ) {
+      setSelectedId(
+        students[0]?.id || ""
+      );
+
       setSelectedClassId("");
     }
-  }, [students, selectedId]);
+  }, [
+    students,
+    selectedId
+  ]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -1183,8 +1519,17 @@ function LearnerDashboard({ user, role }) {
     }
 
     const q = query(
-      collection(db, "students", selectedId, "grades"),
-      where("published", "==", true)
+      collection(
+        db,
+        "students",
+        selectedId,
+        "grades"
+      ),
+      where(
+        "published",
+        "==",
+        true
+      )
     );
 
     return onSnapshot(
@@ -1197,25 +1542,44 @@ function LearnerDashboard({ user, role }) {
           }))
         );
       },
-      e => setError(readableError(e))
+      e => setError(
+        readableError(e)
+      )
     );
   }, [selectedId]);
 
-  const selected = students.find(s => s.id === selectedId);
-  const classes = classesForStudent(selected);
+  const selected = students.find(
+    s => s.id === selectedId
+  );
+
+  const classes =
+    classesForStudent(selected);
+
   const currentClass =
-    classes.find(c => c.id === selectedClassId) || classes[0];
+    classes.find(
+      c => c.id === selectedClassId
+    ) || classes[0];
 
   const classGrades = grades.filter(
-    g => gradeClassId(g) === currentClass?.id
+    g =>
+      gradeClassId(g) ===
+      currentClass?.id
   );
 
   const totals = classGrades.reduce(
     (acc, g) => ({
-      earned: acc.earned + Number(g.earned || 0),
-      possible: acc.possible + Number(g.possible || 0)
+      earned:
+        acc.earned +
+        Number(g.earned || 0),
+
+      possible:
+        acc.possible +
+        Number(g.possible || 0)
     }),
-    { earned: 0, possible: 0 }
+    {
+      earned: 0,
+      possible: 0
+    }
   );
 
   return (
@@ -1235,31 +1599,44 @@ function LearnerDashboard({ user, role }) {
           </h1>
 
           <p>
-            Welcome, {user.displayName || user.email}.
+            Welcome,{" "}
+            {user.displayName ||
+              user.email}.
             Published results appear here.
           </p>
         </div>
 
         <div className="secure-chip">
-          <LockKeyhole size={16} /> Private access
+          <LockKeyhole size={16} />
+          Private access
         </div>
       </div>
 
-      {error && <div className="alert">{error}</div>}
+      {error && (
+        <div className="alert">
+          {error}
+        </div>
+      )}
 
       {!students.length ? (
         <div className="panel empty-panel">
           <Users size={35} />
-          <h2>Your account is ready.</h2>
+
+          <h2>
+            Your account is ready.
+          </h2>
 
           <p>
-            Your tutor will connect your account to a student
-            record after confirming your email.
-            No grades are visible yet.
+            Your tutor will connect your account
+            to a student record after confirming
+            your email. No grades are visible yet.
           </p>
 
           <div className="hint-box">
-            Your email: <strong>{user.email}</strong>
+            Your email:{" "}
+            <strong>
+              {user.email}
+            </strong>
           </div>
         </div>
       ) : (
@@ -1289,11 +1666,16 @@ function LearnerDashboard({ user, role }) {
                 <button
                   key={c.id}
                   className={
-                    c.id === currentClass?.id
+                    c.id ===
+                    currentClass?.id
                       ? "selected"
                       : ""
                   }
-                  onClick={() => setSelectedClassId(c.id)}
+                  onClick={() =>
+                    setSelectedClassId(
+                      c.id
+                    )
+                  }
                 >
                   {c.name}
                 </button>
@@ -1302,39 +1684,69 @@ function LearnerDashboard({ user, role }) {
 
             <p
               className="muted tiny"
-              style={{ marginBottom: 0 }}
+              style={{
+                marginBottom: 0
+              }}
             >
-              Grade level: {selected?.gradeLevel || "Not set"}.
-              Choose a class to view its scores and lesson link.
+              Grade level:{" "}
+              {selected?.gradeLevel ||
+                "Not set"}.
+              Choose a class to view
+              its grades, meeting link,
+              homework, and classwork.
             </p>
           </section>
 
           <div className="metric-grid">
             <div className="metric">
-              <small>Published assessments</small>
-              <strong>{classGrades.length}</strong>
-              <span>For {currentClass?.name}</span>
+              <small>
+                Published assessments
+              </small>
+
+              <strong>
+                {classGrades.length}
+              </strong>
+
+              <span>
+                For{" "}
+                {currentClass?.name}
+              </span>
             </div>
 
             <div className="metric">
-              <small>Class score</small>
+              <small>
+                Class score
+              </small>
+
               <strong>
                 {totals.possible
                   ? `${Math.round(
-                      totals.earned / totals.possible * 100
+                      (totals.earned /
+                        totals.possible) *
+                        100
                     )}%`
                   : "-"}
               </strong>
-              <span>Based on points in this class</span>
+
+              <span>
+                Based on points
+                in this class
+              </span>
             </div>
 
             <div className="metric">
-              <small>Selected class</small>
+              <small>
+                Selected class
+              </small>
+
               <strong className="metric-subject">
-                {currentClass?.name || "-"}
+                {currentClass?.name ||
+                  "-"}
               </strong>
+
               <span>
-                {selected?.gradeLevel || "Learning support"}
+                {selected?.gradeLevel ||
+                  "Learning support"}
               </span>
             </div>
           </div>
@@ -1343,49 +1755,70 @@ function LearnerDashboard({ user, role }) {
             <section className="panel">
               <div className="panel-heading">
                 <h2>
-                  {currentClass?.name} - Grade history
+                  {currentClass?.name}
+                  {" - "}Grade history
                 </h2>
+
                 <span className="chip">
                   Published only
                 </span>
               </div>
-              <GradeList grades={classGrades} />
+
+              <GradeList
+                grades={classGrades}
+              />
             </section>
 
             <section className="panel">
               <div className="panel-heading">
                 <h2>
-                  Next {currentClass?.name} lesson
+                  Next{" "}
+                  {currentClass?.name}{" "}
+                  lesson
                 </h2>
               </div>
 
               <p className="schedule-date">
-                {formatDate(currentClass?.nextLessonAt)}
+                {formatDate(
+                  currentClass?.nextLessonAt
+                )}
               </p>
 
               <p className="muted">
                 {formatLessonDuration(
                   currentClass?.durationMinutes
-                )} planned session
+                )}{" "}
+                planned session
               </p>
 
               {currentClass?.meetingUrl ? (
                 <a
                   className="button button-full"
-                  href={currentClass.meetingUrl}
+                  href={
+                    currentClass.meetingUrl
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Join Google Meet <Video size={18} />
+                  Join Google Meet
+                  <Video size={18} />
                 </a>
               ) : (
                 <div className="empty-small">
-                  Your tutor hasn't provided a meeting link
-                  for this class.
+                  Your tutor hasn't provided
+                  a meeting link for this class.
                 </div>
               )}
             </section>
           </div>
+
+          {selected && currentClass && (
+            <DriveMaterials
+              key={`${selected.id}:${currentClass.id}`}
+              studentId={selected.id}
+              currentClass={currentClass}
+            />
+          )}
         </>
       )}
     </div>
@@ -1393,40 +1826,73 @@ function LearnerDashboard({ user, role }) {
 }
 
 function TutorDashboard({ user }) {
-  const [students, setStudents] = useState([]);
-  const [profiles, setProfiles] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [grades, setGrades] = useState([]);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [students, setStudents] =
+    useState([]);
 
-  const [newStudent, setNewStudent] = useState({
-    name: "",
-    parentEmail: "",
-    gradeLevel: "",
-    subject: ""
-  });
+  const [profiles, setProfiles] =
+    useState([]);
 
-  const [newGrade, setNewGrade] = useState({
-    title: "",
-    earned: "",
-    possible: "",
-    feedback: ""
-  });
+  const [selectedId, setSelectedId] =
+    useState("");
 
-  const [session, setSession] = useState({
-    meetingUrl: "",
-    lessonAt: "",
-    durationMinutes: 60
-  });
+  const [grades, setGrades] =
+    useState([]);
 
-  const [studentEmail, setStudentEmail] = useState("");
-  const [linkEmail, setLinkEmail] = useState("");
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [gradeLevelEdit, setGradeLevelEdit] = useState("");
-  const [newClassName, setNewClassName] = useState("");
-  const [classNameEdit, setClassNameEdit] = useState("");
+  const [error, setError] =
+    useState("");
+
+  const [notice, setNotice] =
+    useState("");
+
+  const [busy, setBusy] =
+    useState(false);
+
+  const [newStudent, setNewStudent] =
+    useState({
+      name: "",
+      parentEmail: "",
+      gradeLevel: "",
+      subject: ""
+    });
+
+  const [newGrade, setNewGrade] =
+    useState({
+      title: "",
+      earned: "",
+      possible: "",
+      feedback: ""
+    });
+
+  const [session, setSession] =
+    useState({
+      meetingUrl: "",
+      lessonAt: "",
+      durationMinutes: 60
+    });
+
+  const [studentEmail, setStudentEmail] =
+    useState("");
+
+  const [linkEmail, setLinkEmail] =
+    useState("");
+
+  const [
+    selectedClassId,
+    setSelectedClassId
+  ] = useState("");
+
+  const [
+    gradeLevelEdit,
+    setGradeLevelEdit
+  ] = useState("");
+
+  const [newClassName, setNewClassName] =
+    useState("");
+
+  const [
+    classNameEdit,
+    setClassNameEdit
+  ] = useState("");
 
   useEffect(() => {
     const unsubStudents = onSnapshot(
@@ -1439,7 +1905,9 @@ function TutorDashboard({ user }) {
           }))
         );
       },
-      e => setError(readableError(e))
+      e => setError(
+        readableError(e)
+      )
     );
 
     const unsubProfiles = onSnapshot(
@@ -1452,7 +1920,9 @@ function TutorDashboard({ user }) {
           }))
         );
       },
-      e => setError(readableError(e))
+      e => setError(
+        readableError(e)
+      )
     );
 
     return () => {
@@ -1462,10 +1932,19 @@ function TutorDashboard({ user }) {
   }, []);
 
   useEffect(() => {
-    if (!students.find(s => s.id === selectedId)) {
-      setSelectedId(students[0]?.id || "");
+    if (
+      !students.find(
+        s => s.id === selectedId
+      )
+    ) {
+      setSelectedId(
+        students[0]?.id || ""
+      );
     }
-  }, [students, selectedId]);
+  }, [
+    students,
+    selectedId
+  ]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -1474,7 +1953,12 @@ function TutorDashboard({ user }) {
     }
 
     return onSnapshot(
-      collection(db, "students", selectedId, "grades"),
+      collection(
+        db,
+        "students",
+        selectedId,
+        "grades"
+      ),
       snapshot => {
         setGrades(
           snapshot.docs.map(d => ({
@@ -1483,22 +1967,37 @@ function TutorDashboard({ user }) {
           }))
         );
       },
-      e => setError(readableError(e))
+      e => setError(
+        readableError(e)
+      )
     );
   }, [selectedId]);
 
-  const selected = students.find(s => s.id === selectedId);
-  const classes = classesForStudent(selected);
+  const selected = students.find(
+    s => s.id === selectedId
+  );
+
+  const classes =
+    classesForStudent(selected);
 
   const currentClass =
-    classes.find(c => c.id === selectedClassId) || classes[0];
+    classes.find(
+      c => c.id === selectedClassId
+    ) || classes[0];
 
   useEffect(() => {
-    setGradeLevelEdit(selected?.gradeLevel || "");
-  }, [selectedId, selected?.gradeLevel]);
+    setGradeLevelEdit(
+      selected?.gradeLevel || ""
+    );
+  }, [
+    selectedId,
+    selected?.gradeLevel
+  ]);
 
   useEffect(() => {
-    setClassNameEdit(currentClass?.name || "");
+    setClassNameEdit(
+      currentClass?.name || ""
+    );
   }, [
     selectedId,
     currentClass?.id,
@@ -1507,11 +2006,18 @@ function TutorDashboard({ user }) {
 
   useEffect(() => {
     setSession({
-      meetingUrl: currentClass?.meetingUrl || "",
-      lessonAt: toLocalInput(currentClass?.nextLessonAt),
-      durationMinutes: normalizedLessonMinutes(
-        currentClass?.durationMinutes
-      )
+      meetingUrl:
+        currentClass?.meetingUrl || "",
+
+      lessonAt:
+        toLocalInput(
+          currentClass?.nextLessonAt
+        ),
+
+      durationMinutes:
+        normalizedLessonMinutes(
+          currentClass?.durationMinutes
+        )
     });
   }, [
     selectedId,
@@ -1522,20 +2028,31 @@ function TutorDashboard({ user }) {
   ]);
 
   useEffect(() => {
-    setLinkEmail(selected?.studentEmail || "");
-  }, [selectedId, selected?.studentEmail]);
+    setLinkEmail(
+      selected?.studentEmail || ""
+    );
+  }, [
+    selectedId,
+    selected?.studentEmail
+  ]);
 
-  // Existing grades without classId remain in the original class.
   const sortedGrades = grades
-    .filter(g => gradeClassId(g) === currentClass?.id)
+    .filter(
+      g =>
+        gradeClassId(g) ===
+        currentClass?.id
+    )
     .sort(
       (a, b) =>
-        (b.createdAt?.seconds || 0) -
-        (a.createdAt?.seconds || 0)
+        (b.createdAt?.seconds ||
+          0) -
+        (a.createdAt?.seconds ||
+          0)
     );
 
   async function saveGradeLevel(event) {
     event.preventDefault();
+
     if (!selected) return;
 
     setError("");
@@ -1543,17 +2060,27 @@ function TutorDashboard({ user }) {
     setBusy(true);
 
     try {
-      const level = gradeLevelEdit.trim();
+      const level =
+        gradeLevelEdit.trim();
 
-      if (!level || level.length > 30) {
+      if (
+        !level ||
+        level.length > 30
+      ) {
         throw new Error(
           "Enter a grade level of 1 to 30 characters."
         );
       }
 
       await updateDoc(
-        doc(db, "students", selected.id),
-        { gradeLevel: level }
+        doc(
+          db,
+          "students",
+          selected.id
+        ),
+        {
+          gradeLevel: level
+        }
       );
 
       setNotice(
@@ -1568,6 +2095,7 @@ function TutorDashboard({ user }) {
 
   async function addClass(event) {
     event.preventDefault();
+
     if (!selected) return;
 
     setError("");
@@ -1575,9 +2103,13 @@ function TutorDashboard({ user }) {
     setBusy(true);
 
     try {
-      const name = newClassName.trim();
+      const name =
+        newClassName.trim();
 
-      if (!name || name.length > 60) {
+      if (
+        !name ||
+        name.length > 60
+      ) {
         throw new Error(
           "Enter a class name of 1 to 60 characters."
         );
@@ -1585,7 +2117,9 @@ function TutorDashboard({ user }) {
 
       if (
         classes.some(
-          c => c.name.toLowerCase() === name.toLowerCase()
+          c =>
+            c.name.toLowerCase() ===
+            name.toLowerCase()
         )
       ) {
         throw new Error(
@@ -1593,16 +2127,27 @@ function TutorDashboard({ user }) {
         );
       }
 
-      const id = doc(collection(db, "students")).id;
+      const id = doc(
+        collection(
+          db,
+          "students"
+        )
+      ).id;
 
       await updateDoc(
-        doc(db, "students", selected.id),
+        doc(
+          db,
+          "students",
+          selected.id
+        ),
         {
           classes: [
             ...classes,
             {
               id,
               name,
+              homeworkDriveUrl: "",
+              classworkDriveUrl: "",
               meetingUrl: "",
               nextLessonAt: "",
               durationMinutes: 60
@@ -1613,7 +2158,10 @@ function TutorDashboard({ user }) {
 
       setSelectedClassId(id);
       setNewClassName("");
-      setNotice(`${name} added for ${selected.name}.`);
+
+      setNotice(
+        `${name} added for ${selected.name}.`
+      );
     } catch (e) {
       setError(readableError(e));
     } finally {
@@ -1623,16 +2171,26 @@ function TutorDashboard({ user }) {
 
   async function renameClass(event) {
     event.preventDefault();
-    if (!selected || !currentClass) return;
+
+    if (
+      !selected ||
+      !currentClass
+    ) {
+      return;
+    }
 
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
-      const name = classNameEdit.trim();
+      const name =
+        classNameEdit.trim();
 
-      if (!name || name.length > 60) {
+      if (
+        !name ||
+        name.length > 60
+      ) {
         throw new Error(
           "Enter a class name of 1 to 60 characters."
         );
@@ -1641,8 +2199,10 @@ function TutorDashboard({ user }) {
       if (
         classes.some(
           c =>
-            c.id !== currentClass.id &&
-            c.name.toLowerCase() === name.toLowerCase()
+            c.id !==
+              currentClass.id &&
+            c.name.toLowerCase() ===
+              name.toLowerCase()
         )
       ) {
         throw new Error(
@@ -1651,11 +2211,18 @@ function TutorDashboard({ user }) {
       }
 
       await updateDoc(
-        doc(db, "students", selected.id),
+        doc(
+          db,
+          "students",
+          selected.id
+        ),
         {
           classes: classes.map(c =>
             c.id === currentClass.id
-              ? { ...c, name }
+              ? {
+                  ...c,
+                  name
+                }
               : c
           )
         }
@@ -1673,18 +2240,21 @@ function TutorDashboard({ user }) {
 
   async function createStudent(event) {
     event.preventDefault();
+
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
-      const email = newStudent.parentEmail
-        .trim()
-        .toLowerCase();
+      const email =
+        newStudent.parentEmail
+          .trim()
+          .toLowerCase();
 
       const parent = profiles.find(
         p =>
-          p.email?.toLowerCase() === email &&
+          p.email?.toLowerCase() ===
+            email &&
           p.role !== "student"
       );
 
@@ -1694,16 +2264,22 @@ function TutorDashboard({ user }) {
         );
       }
 
-      const registeredStudent = studentEmail.trim()
-        ? profiles.find(
-            p =>
-              p.email?.toLowerCase() ===
-                studentEmail.trim().toLowerCase() &&
-              p.role === "student"
-          )
-        : null;
+      const registeredStudent =
+        studentEmail.trim()
+          ? profiles.find(
+              p =>
+                p.email?.toLowerCase() ===
+                  studentEmail
+                    .trim()
+                    .toLowerCase() &&
+                p.role === "student"
+            )
+          : null;
 
-      if (studentEmail.trim() && !registeredStudent) {
+      if (
+        studentEmail.trim() &&
+        !registeredStudent
+      ) {
         throw new Error(
           "Student account not found. Ask the student and guardian to register and verify their email first, or leave this blank and link it later."
         );
@@ -1712,29 +2288,50 @@ function TutorDashboard({ user }) {
       const ref = await addDoc(
         collection(db, "students"),
         {
-          name: newStudent.name.trim(),
+          name:
+            newStudent.name.trim(),
+
           parentEmail: email,
-          parentUids: [parent.id],
-          studentUids: registeredStudent
-            ? [registeredStudent.id]
-            : [],
+
+          parentUids: [
+            parent.id
+          ],
+
+          studentUids:
+            registeredStudent
+              ? [registeredStudent.id]
+              : [],
+
           studentEmail:
             registeredStudent?.email || "",
-          gradeLevel: newStudent.gradeLevel.trim(),
-          subject: newStudent.subject.trim(),
+
+          gradeLevel:
+            newStudent.gradeLevel.trim(),
+
+          subject:
+            newStudent.subject.trim(),
+
           classes: [
             {
               id: "original",
-              name: newStudent.subject.trim(),
+              name:
+                newStudent.subject.trim(),
+
+              homeworkDriveUrl: "",
+              classworkDriveUrl: "",
+
               meetingUrl: "",
               nextLessonAt: "",
               durationMinutes: 60
             }
           ],
+
           meetingUrl: "",
           nextLessonAt: "",
           durationMinutes: 60,
-          createdAt: serverTimestamp()
+
+          createdAt:
+            serverTimestamp()
         }
       );
 
@@ -1761,6 +2358,7 @@ function TutorDashboard({ user }) {
 
   async function linkStudentAccount(event) {
     event.preventDefault();
+
     if (!selected) return;
 
     setError("");
@@ -1768,24 +2366,35 @@ function TutorDashboard({ user }) {
     setBusy(true);
 
     try {
-      const email = linkEmail.trim().toLowerCase();
+      const email =
+        linkEmail
+          .trim()
+          .toLowerCase();
 
       if (!email) {
         await updateDoc(
-          doc(db, "students", selected.id),
+          doc(
+            db,
+            "students",
+            selected.id
+          ),
           {
             studentUids: [],
             studentEmail: ""
           }
         );
 
-        setNotice("Student sign-in access unlinked.");
-      } else {
-        const studentProfile = profiles.find(
-          p =>
-            p.email?.toLowerCase() === email &&
-            p.role === "student"
+        setNotice(
+          "Student sign-in access unlinked."
         );
+      } else {
+        const studentProfile =
+          profiles.find(
+            p =>
+              p.email?.toLowerCase() ===
+                email &&
+              p.role === "student"
+          );
 
         if (!studentProfile) {
           throw new Error(
@@ -1794,9 +2403,15 @@ function TutorDashboard({ user }) {
         }
 
         await updateDoc(
-          doc(db, "students", selected.id),
+          doc(
+            db,
+            "students",
+            selected.id
+          ),
           {
-            studentUids: [studentProfile.id],
+            studentUids: [
+              studentProfile.id
+            ],
             studentEmail: email
           }
         );
@@ -1814,15 +2429,24 @@ function TutorDashboard({ user }) {
 
   async function addGrade(event) {
     event.preventDefault();
-    if (!selected || !currentClass) return;
+
+    if (
+      !selected ||
+      !currentClass
+    ) {
+      return;
+    }
 
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
-      const earned = Number(newGrade.earned);
-      const possible = Number(newGrade.possible);
+      const earned =
+        Number(newGrade.earned);
+
+      const possible =
+        Number(newGrade.possible);
 
       if (
         !Number.isFinite(earned) ||
@@ -1837,15 +2461,29 @@ function TutorDashboard({ user }) {
       }
 
       await addDoc(
-        collection(db, "students", selected.id, "grades"),
+        collection(
+          db,
+          "students",
+          selected.id,
+          "grades"
+        ),
         {
-          title: newGrade.title.trim(),
-          classId: currentClass.id,
+          title:
+            newGrade.title.trim(),
+
+          classId:
+            currentClass.id,
+
           earned,
           possible,
-          feedback: newGrade.feedback.trim(),
+
+          feedback:
+            newGrade.feedback.trim(),
+
           published: false,
-          createdAt: serverTimestamp()
+
+          createdAt:
+            serverTimestamp()
         }
       );
 
@@ -1880,10 +2518,17 @@ function TutorDashboard({ user }) {
 
     try {
       await updateDoc(
-        doc(db, "students", selectedId, "grades", gradeId),
+        doc(
+          db,
+          "students",
+          selectedId,
+          "grades",
+          gradeId
+        ),
         {
           published: true,
-          publishedAt: serverTimestamp()
+          publishedAt:
+            serverTimestamp()
         }
       );
 
@@ -1897,19 +2542,30 @@ function TutorDashboard({ user }) {
 
   async function saveSession(event) {
     event.preventDefault();
-    if (!selected || !currentClass) return;
+
+    if (
+      !selected ||
+      !currentClass
+    ) {
+      return;
+    }
 
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
-      if (session.meetingUrl) {
-        const url = new URL(session.meetingUrl);
+      if (
+        session.meetingUrl
+      ) {
+        const url = new URL(
+          session.meetingUrl
+        );
 
         if (
           url.protocol !== "https:" ||
-          url.hostname !== "meet.google.com"
+          url.hostname !==
+            "meet.google.com"
         ) {
           throw new Error(
             "Please paste a valid https://meet.google.com meeting link."
@@ -1920,7 +2576,9 @@ function TutorDashboard({ user }) {
       if (
         session.lessonAt &&
         Number.isNaN(
-          new Date(session.lessonAt).getTime()
+          new Date(
+            session.lessonAt
+          ).getTime()
         )
       ) {
         throw new Error(
@@ -1929,19 +2587,30 @@ function TutorDashboard({ user }) {
       }
 
       await updateDoc(
-        doc(db, "students", selected.id),
+        doc(
+          db,
+          "students",
+          selected.id
+        ),
         {
           classes: classes.map(c =>
             c.id === currentClass.id
               ? {
                   ...c,
-                  meetingUrl: session.meetingUrl.trim(),
-                  nextLessonAt: session.lessonAt
-                    ? new Date(session.lessonAt).toISOString()
-                    : "",
-                  durationMinutes: Number(
-                    session.durationMinutes
-                  )
+                  meetingUrl:
+                    session.meetingUrl.trim(),
+
+                  nextLessonAt:
+                    session.lessonAt
+                      ? new Date(
+                          session.lessonAt
+                        ).toISOString()
+                      : "",
+
+                  durationMinutes:
+                    Number(
+                      session.durationMinutes
+                    )
                 }
               : c
           )
@@ -1968,9 +2637,15 @@ function TutorDashboard({ user }) {
       `Hello,\n\nA new assessment result for ${selected.name} is available in your LessonBilly parent portal.\n\nPlease sign in at ${window.location.origin} to view it.\n\nThank you,\nLessonBilly`;
 
     window.location.href =
-      `mailto:${encodeURIComponent(selected.parentEmail)}` +
-      `?subject=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
+      `mailto:${encodeURIComponent(
+        selected.parentEmail
+      )}` +
+      `?subject=${encodeURIComponent(
+        subject
+      )}` +
+      `&body=${encodeURIComponent(
+        body
+      )}`;
   }
 
   return (
@@ -1982,12 +2657,13 @@ function TutorDashboard({ user }) {
           </span>
 
           <h1>
-            Good to see you, {user.displayName || "Tutor"}.
+            Good to see you,{" "}
+            {user.displayName || "Tutor"}.
           </h1>
 
           <p>
-            Manage your students, assessment results,
-            and tutoring links.
+            Manage your students, assessment
+            results, and tutoring links.
           </p>
         </div>
 
@@ -2004,7 +2680,10 @@ function TutorDashboard({ user }) {
       )}
 
       {notice && (
-        <div className="success-note" role="status">
+        <div
+          className="success-note"
+          role="status"
+        >
           {notice}
         </div>
       )}
@@ -2019,15 +2698,28 @@ function TutorDashboard({ user }) {
         </div>
 
         <div className="metric">
-          <small>Registered accounts</small>
+          <small>
+            Registered accounts
+          </small>
+
           <strong>{profiles.length}</strong>
-          <span>Including your account</span>
+          <span>
+            Including your account
+          </span>
         </div>
 
         <div className="metric">
-          <small>Notifications</small>
-          <strong className="metric-subject">Manual</strong>
-          <span>No automatic grade emails</span>
+          <small>
+            Notifications
+          </small>
+
+          <strong className="metric-subject">
+            Manual
+          </strong>
+
+          <span>
+            No automatic grade emails
+          </span>
         </div>
       </div>
 
@@ -2035,12 +2727,14 @@ function TutorDashboard({ user }) {
         <section className="panel">
           <div className="panel-heading">
             <h2>
-              <Users size={19} /> Add a student
+              <Users size={19} />
+              Add a student
             </h2>
           </div>
 
           <p className="muted">
-            A parent must register and verify their email first.
+            A parent must register and verify
+            their email first.
           </p>
 
           <form
@@ -2049,6 +2743,7 @@ function TutorDashboard({ user }) {
           >
             <label>
               Student name
+
               <input
                 required
                 maxLength={80}
@@ -2065,6 +2760,7 @@ function TutorDashboard({ user }) {
 
             <label>
               Parent's registered email
+
               <input
                 required
                 type="email"
@@ -2073,7 +2769,8 @@ function TutorDashboard({ user }) {
                 onChange={e =>
                   setNewStudent({
                     ...newStudent,
-                    parentEmail: e.target.value
+                    parentEmail:
+                      e.target.value
                   })
                 }
               />
@@ -2081,23 +2778,29 @@ function TutorDashboard({ user }) {
 
             <label>
               Student's registered email (optional)
+
               <input
                 type="email"
                 placeholder="student@example.com"
                 value={studentEmail}
                 onChange={e =>
-                  setStudentEmail(e.target.value)
+                  setStudentEmail(
+                    e.target.value
+                  )
                 }
               />
+
               <small className="muted">
-                Student accounts must register and verify
-                first. You can link one later.
+                Student accounts must register
+                and verify first.
+                You can link one later.
               </small>
             </label>
 
             <div className="form-pair">
               <label>
                 Grade level
+
                 <input
                   required
                   maxLength={30}
@@ -2106,7 +2809,8 @@ function TutorDashboard({ user }) {
                   onChange={e =>
                     setNewStudent({
                       ...newStudent,
-                      gradeLevel: e.target.value
+                      gradeLevel:
+                        e.target.value
                     })
                   }
                 />
@@ -2114,6 +2818,7 @@ function TutorDashboard({ user }) {
 
               <label>
                 First class / subject
+
                 <input
                   required
                   maxLength={60}
@@ -2122,7 +2827,8 @@ function TutorDashboard({ user }) {
                   onChange={e =>
                     setNewStudent({
                       ...newStudent,
-                      subject: e.target.value
+                      subject:
+                        e.target.value
                     })
                   }
                 />
@@ -2133,7 +2839,8 @@ function TutorDashboard({ user }) {
               className="button"
               disabled={busy}
             >
-              <Plus size={17} /> Add student
+              <Plus size={17} />
+              Add student
             </button>
           </form>
         </section>
@@ -2141,14 +2848,15 @@ function TutorDashboard({ user }) {
         <section className="panel">
           <div className="panel-heading">
             <h2>
-              <GraduationCap size={19} /> Your students
+              <GraduationCap size={19} />
+              Your students
             </h2>
           </div>
 
           {!students.length ? (
             <div className="empty-small">
-              No students yet. Add your first student
-              using the form.
+              No students yet. Add your first
+              student using the form.
             </div>
           ) : (
             <div className="student-list">
@@ -2166,13 +2874,16 @@ function TutorDashboard({ user }) {
                   }}
                 >
                   <span className="student-avatar">
-                    {s.name.charAt(0).toUpperCase()}
+                    {s.name
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
 
                   <span>
                     <b>{s.name}</b>
                     <small>
-                      {s.subject} · {s.gradeLevel}
+                      {s.subject} ·{" "}
+                      {s.gradeLevel}
                     </small>
                   </span>
 
@@ -2187,16 +2898,22 @@ function TutorDashboard({ user }) {
       {selected && (
         <>
           <div className="section-divider">
-            <h2>Manage {selected.name}</h2>
+            <h2>
+              Manage {selected.name}
+            </h2>
+
             <span>
-              {selected.gradeLevel || "Grade not set"} ·{" "}
-              {selected.parentEmail}
+              {selected.gradeLevel ||
+                "Grade not set"}{" "}
+              · {selected.parentEmail}
             </span>
           </div>
 
           <section
             className="panel"
-            style={{ marginTop: 22 }}
+            style={{
+              marginTop: 22
+            }}
           >
             <div className="panel-heading">
               <h2>
@@ -2206,9 +2923,12 @@ function TutorDashboard({ user }) {
             </div>
 
             <p className="muted">
-              Update the student's grade level when they advance,
-              and add as many subjects as needed. Each class
-              has its own assessments and lesson link.
+              Update the student's grade level
+              when they advance, and add as many
+              subjects as needed.
+              Each class has separate assessments,
+              a lesson link, and homework and
+              classwork PDFs.
             </p>
 
             <form
@@ -2217,13 +2937,16 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Student grade level
+
                 <input
                   required
                   maxLength={30}
                   placeholder="e.g. Grade 9"
                   value={gradeLevelEdit}
                   onChange={e =>
-                    setGradeLevelEdit(e.target.value)
+                    setGradeLevelEdit(
+                      e.target.value
+                    )
                   }
                 />
               </label>
@@ -2239,14 +2962,20 @@ function TutorDashboard({ user }) {
 
             <div
               className="panel-heading"
-              style={{ marginTop: 28 }}
+              style={{
+                marginTop: 28
+              }}
             >
-              <h2>Classes for {selected.name}</h2>
+              <h2>
+                Classes for {selected.name}
+              </h2>
             </div>
 
             <div
               className="student-tabs"
-              style={{ marginBottom: 10 }}
+              style={{
+                marginBottom: 10
+              }}
             >
               {classes.map(c => (
                 <button
@@ -2268,14 +2997,18 @@ function TutorDashboard({ user }) {
 
             <p className="muted tiny">
               Selected class:{" "}
-              <strong>{currentClass?.name}</strong>.
-              Assessments and upcoming lesson details below
-              belong to the selected class.
+              <strong>
+                {currentClass?.name}
+              </strong>.
+              Assessments, lessons, and PDFs
+              below belong to the selected class.
             </p>
 
             <div
               className="dashboard-grid"
-              style={{ marginBottom: 0 }}
+              style={{
+                marginBottom: 0
+              }}
             >
               <form
                 className="stack-form"
@@ -2283,13 +3016,16 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Add another class
+
                   <input
                     required
                     maxLength={60}
                     placeholder="e.g. English"
                     value={newClassName}
                     onChange={e =>
-                      setNewClassName(e.target.value)
+                      setNewClassName(
+                        e.target.value
+                      )
                     }
                   />
                 </label>
@@ -2299,7 +3035,8 @@ function TutorDashboard({ user }) {
                   disabled={busy}
                   type="submit"
                 >
-                  <Plus size={17} /> Add class
+                  <Plus size={17} />
+                  Add class
                 </button>
               </form>
 
@@ -2309,12 +3046,15 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Rename selected class
+
                   <input
                     required
                     maxLength={60}
                     value={classNameEdit}
                     onChange={e =>
-                      setClassNameEdit(e.target.value)
+                      setClassNameEdit(
+                        e.target.value
+                      )
                     }
                   />
                 </label>
@@ -2332,7 +3072,9 @@ function TutorDashboard({ user }) {
 
           <section
             className="panel"
-            style={{ marginTop: 22 }}
+            style={{
+              marginTop: 22
+            }}
           >
             <div className="panel-heading">
               <h2>
@@ -2342,8 +3084,9 @@ function TutorDashboard({ user }) {
             </div>
 
             <p className="muted">
-              Link this student record to a separate student
-              login. Parents keep their own login.
+              Link this student record to a separate
+              student login. Parents keep their
+              own login.
             </p>
 
             <form
@@ -2352,6 +3095,7 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Student account email
+
                 <input
                   type="email"
                   placeholder="student@example.com"
@@ -2381,12 +3125,20 @@ function TutorDashboard({ user }) {
                 </h2>
               </div>
 
+              <p className="muted tiny">
+                Class:{" "}
+                <strong>
+                  {currentClass?.name}
+                </strong>
+              </p>
+
               <form
                 className="stack-form"
                 onSubmit={addGrade}
               >
                 <label>
                   Assessment title
+
                   <input
                     required
                     maxLength={100}
@@ -2395,7 +3147,8 @@ function TutorDashboard({ user }) {
                     onChange={e =>
                       setNewGrade({
                         ...newGrade,
-                        title: e.target.value
+                        title:
+                          e.target.value
                       })
                     }
                   />
@@ -2404,6 +3157,7 @@ function TutorDashboard({ user }) {
                 <div className="form-pair">
                   <label>
                     Points earned
+
                     <input
                       required
                       type="number"
@@ -2413,7 +3167,8 @@ function TutorDashboard({ user }) {
                       onChange={e =>
                         setNewGrade({
                           ...newGrade,
-                          earned: e.target.value
+                          earned:
+                            e.target.value
                         })
                       }
                     />
@@ -2421,6 +3176,7 @@ function TutorDashboard({ user }) {
 
                   <label>
                     Points possible
+
                     <input
                       required
                       type="number"
@@ -2430,7 +3186,8 @@ function TutorDashboard({ user }) {
                       onChange={e =>
                         setNewGrade({
                           ...newGrade,
-                          possible: e.target.value
+                          possible:
+                            e.target.value
                         })
                       }
                     />
@@ -2439,6 +3196,7 @@ function TutorDashboard({ user }) {
 
                 <label>
                   Optional feedback
+
                   <textarea
                     rows="3"
                     maxLength={700}
@@ -2447,7 +3205,8 @@ function TutorDashboard({ user }) {
                     onChange={e =>
                       setNewGrade({
                         ...newGrade,
-                        feedback: e.target.value
+                        feedback:
+                          e.target.value
                       })
                     }
                   />
@@ -2457,7 +3216,8 @@ function TutorDashboard({ user }) {
                   className="button"
                   disabled={busy}
                 >
-                  <Plus size={17} /> Save draft grade
+                  <Plus size={17} />
+                  Save draft grade
                 </button>
               </form>
             </section>
@@ -2465,14 +3225,16 @@ function TutorDashboard({ user }) {
             <section className="panel">
               <div className="panel-heading">
                 <h2>
-                  {currentClass?.name} assessment history
+                  {currentClass?.name}{" "}
+                  assessment history
                 </h2>
 
                 <button
                   className="subtle-button"
                   onClick={emailParent}
                 >
-                  <Send size={16} /> Email parent
+                  <Send size={16} />
+                  Email parent
                 </button>
               </div>
 
@@ -2483,10 +3245,11 @@ function TutorDashboard({ user }) {
               />
 
               <p className="muted tiny">
-                Only published scores for the selected class
-                appear in student and parent accounts.
-                Email Parent opens your email app; it
-                does not send automatically.
+                Only published scores for the
+                selected class appear in student
+                and parent accounts.
+                Email Parent opens your email
+                app; it does not send automatically.
               </p>
             </section>
           </div>
@@ -2494,7 +3257,9 @@ function TutorDashboard({ user }) {
           <section className="panel session-panel">
             <div className="panel-heading">
               <h2>
-                Upcoming {currentClass?.name} lesson
+                Upcoming{" "}
+                {currentClass?.name}{" "}
+                lesson
               </h2>
             </div>
 
@@ -2504,6 +3269,7 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Google Meet link
+
                 <input
                   type="url"
                   placeholder="https://meet.google.com/abc-defg-hij"
@@ -2511,7 +3277,8 @@ function TutorDashboard({ user }) {
                   onChange={e =>
                     setSession({
                       ...session,
-                      meetingUrl: e.target.value
+                      meetingUrl:
+                        e.target.value
                     })
                   }
                 />
@@ -2519,13 +3286,15 @@ function TutorDashboard({ user }) {
 
               <label>
                 Lesson date and time
+
                 <input
                   type="datetime-local"
                   value={session.lessonAt}
                   onChange={e =>
                     setSession({
                       ...session,
-                      lessonAt: e.target.value
+                      lessonAt:
+                        e.target.value
                     })
                   }
                 />
@@ -2533,22 +3302,38 @@ function TutorDashboard({ user }) {
 
               <label>
                 Lesson duration
+
                 <select
                   value={session.durationMinutes}
                   onChange={e =>
                     setSession({
                       ...session,
-                      durationMinutes: Number(
-                        e.target.value
-                      )
+                      durationMinutes:
+                        Number(
+                          e.target.value
+                        )
                     })
                   }
                 >
-                  <option value="60">1 hour</option>
-                  <option value="90">1 hour 30 minutes</option>
-                  <option value="120">2 hours</option>
-                  <option value="150">2 hours 30 minutes</option>
-                  <option value="180">3 hours</option>
+                  <option value="60">
+                    1 hour
+                  </option>
+
+                  <option value="90">
+                    1 hour 30 minutes
+                  </option>
+
+                  <option value="120">
+                    2 hours
+                  </option>
+
+                  <option value="150">
+                    2 hours 30 minutes
+                  </option>
+
+                  <option value="180">
+                    3 hours
+                  </option>
                 </select>
               </label>
 
@@ -2566,6 +3351,15 @@ function TutorDashboard({ user }) {
               but does not limit the meeting length.
             </p>
           </section>
+
+          {currentClass && (
+            <DriveMaterials
+              key={`${selected.id}:${currentClass.id}`}
+              studentId={selected.id}
+              currentClass={currentClass}
+              canEdit
+            />
+          )}
         </>
       )}
     </div>
@@ -2580,41 +3374,46 @@ function PrivacyScreen() {
           LESSONBILLY
         </span>
 
-        <h1>Privacy information</h1>
+        <h1>
+          Privacy information
+        </h1>
 
         <p>
           LessonBilly collects parent account details,
-          student names, subjects, grades, and lesson
-          information to provide tutoring and a private
-          progress portal. Firebase processes account
-          and grade information, and Google Meet handles
+          student names, subjects, grades, lesson
+          information, and Google Drive file links
+          to provide tutoring and a private progress
+          portal. Firebase processes account and
+          grade information, Google Drive hosts
+          class PDFs, and Google Meet handles
           live lessons.
         </p>
 
         <p>
           Parents can request corrections or deletion
           of their family's records by contacting
-          LessonBilly. Grades are not made public,
-          and results are not emailed automatically.
-          Lesson recordings are optional, require
-          advance permission, and are not stored
-          in Firebase through this website.
+          LessonBilly. Published PDF links are shown
+          only to linked families, but Google Drive
+          sharing permissions separately control
+          who can open the underlying files.
+          Results are not emailed automatically.
         </p>
 
         <p>
           Before providing the service to children,
-          review applicable child-privacy laws and obtain
-          appropriate parental consent. This starter
-          statement should be reviewed and completed
-          for your actual business practices before
-          you enroll real students.
+          review applicable child-privacy laws and
+          obtain appropriate parental consent.
+          This starter privacy statement should be
+          completed for your actual business
+          practices before enrolling real students.
         </p>
 
         <a
           className="button"
           href={`mailto:${CONTACT_EMAIL}`}
         >
-          Privacy questions <Mail size={16} />
+          Privacy questions
+          <Mail size={16} />
         </a>
       </div>
     </main>
@@ -2634,7 +3433,8 @@ function Footer({ setPage }) {
           />
 
           <p>
-            Personalized tutoring. Meaningful progress.
+            Personalized tutoring.
+            Meaningful progress.
           </p>
         </div>
 
@@ -2643,21 +3443,27 @@ function Footer({ setPage }) {
 
           <a
             href="/#subjects"
-            onClick={() => setPage("home")}
+            onClick={() =>
+              setPage("home")
+            }
           >
             Subjects
           </a>
 
           <a
             href="/#pricing"
-            onClick={() => setPage("home")}
+            onClick={() =>
+              setPage("home")
+            }
           >
             Pricing
           </a>
 
           <a
             href="/#about"
-            onClick={() => setPage("home")}
+            onClick={() =>
+              setPage("home")
+            }
           >
             About
           </a>
@@ -2666,7 +3472,9 @@ function Footer({ setPage }) {
         <div>
           <span>Connect</span>
 
-          <a href={`mailto:${CONTACT_EMAIL}`}>
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+          >
             Email LessonBilly
           </a>
 
@@ -2703,49 +3511,75 @@ function Footer({ setPage }) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [verified, setVerified] = useState(false);
-  const [accountRole, setAccountRole] = useState("parent");
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState("home");
-  const [startupError, setStartupError] = useState("");
+  const [user, setUser] =
+    useState(null);
+
+  const [verified, setVerified] =
+    useState(false);
+
+  const [
+    accountRole,
+    setAccountRole
+  ] = useState("parent");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [page, setPage] =
+    useState("home");
+
+  const [
+    startupError,
+    setStartupError
+  ] = useState("");
 
   useEffect(
     () =>
-      onAuthStateChanged(auth, async next => {
-        setUser(next);
-        setStartupError("");
+      onAuthStateChanged(
+        auth,
+        async next => {
+          setUser(next);
+          setStartupError("");
 
-        if (next) {
-          try {
-            await reload(next);
-            await next.getIdToken(true);
+          if (next) {
+            try {
+              await reload(next);
+              await next.getIdToken(true);
 
-            setVerified(next.emailVerified);
+              setVerified(
+                next.emailVerified
+              );
 
-            if (next.emailVerified) {
-              const role = await ensureProfile(next);
+              if (next.emailVerified) {
+                const role =
+                  await ensureProfile(next);
 
-              setAccountRole(
-                role === "student" ? "student" : "parent"
+                setAccountRole(
+                  role === "student"
+                    ? "student"
+                    : "parent"
+                );
+              }
+            } catch (e) {
+              setStartupError(
+                readableError(e)
               );
             }
-          } catch (e) {
-            setStartupError(readableError(e));
+          } else {
+            setVerified(false);
+            setAccountRole("parent");
           }
-        } else {
-          setVerified(false);
-          setAccountRole("parent");
-        }
 
-        setLoading(false);
-      }),
+          setLoading(false);
+        }
+      ),
     []
   );
 
   const tutor =
     user?.uid === TUTOR_UID &&
-    TUTOR_UID !== "PASTE_TUTOR_UID_HERE";
+    TUTOR_UID !==
+      "PASTE_TUTOR_UID_HERE";
 
   async function logout() {
     await signOut(auth);
@@ -2769,7 +3603,9 @@ export default function App() {
       {loading ? (
         <main className="loading-screen">
           <div className="loader" />
-          <p>Loading LessonBilly...</p>
+          <p>
+            Loading LessonBilly...
+          </p>
         </main>
       ) : page === "home" ? (
         <Home setPage={go} />
@@ -2782,23 +3618,32 @@ export default function App() {
             setVerified(true);
 
             getDoc(
-              doc(db, "profiles", user.uid)
+              doc(
+                db,
+                "profiles",
+                user.uid
+              )
             )
               .then(profile => {
                 setAccountRole(
-                  profile.data()?.role === "student"
+                  profile.data()?.role ===
+                    "student"
                     ? "student"
                     : "parent"
                 );
 
                 go("dashboard");
               })
-              .catch(() => go("dashboard"));
+              .catch(() =>
+                go("dashboard")
+              );
           }}
         />
       ) : page === "auth" && !user ? (
         <AuthScreen
-          onSuccess={() => go("dashboard")}
+          onSuccess={() =>
+            go("dashboard")
+          }
         />
       ) : user ? (
         <main className="dashboard-page shell">
@@ -2809,7 +3654,9 @@ export default function App() {
           )}
 
           {tutor ? (
-            <TutorDashboard user={user} />
+            <TutorDashboard
+              user={user}
+            />
           ) : (
             <LearnerDashboard
               user={user}
@@ -2819,7 +3666,9 @@ export default function App() {
         </main>
       ) : (
         <AuthScreen
-          onSuccess={() => go("dashboard")}
+          onSuccess={() =>
+            go("dashboard")
+          }
         />
       )}
 
