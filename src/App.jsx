@@ -2,181 +2,148 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  ChevronRight,
-  GraduationCap,
-  LockKeyhole,
-  Mail,
-  Menu,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  TrendingUp,
-  Users,
-  Video,
-  X,
-  LogOut,
-  PencilLine,
-  Send
+  ArrowRight, BookOpen, CheckCircle2, ChevronRight,
+  GraduationCap, LockKeyhole, Mail, Menu, Plus,
+  ShieldCheck, Sparkles, Star, TrendingUp, Users,
+  Video, X, LogOut, PencilLine, Send
 } from "lucide-react";
-
 import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  reload,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile
+  createUserWithEmailAndPassword, onAuthStateChanged,
+  reload, sendEmailVerification, signInWithEmailAndPassword,
+  signOut, updateProfile
 } from "firebase/auth";
-
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where
+  addDoc, collection, doc, getDoc, onSnapshot, query,
+  serverTimestamp, setDoc, updateDoc, where
 } from "firebase/firestore";
-
 import { auth, db, TUTOR_UID } from "./firebase";
 import TutorGuide from "./TutorGuide.jsx";
 import DriveMaterials from "./DriveMaterials.jsx";
+import PracticeCenter from "./PracticeCenter.jsx";
+import FeatureShowcase from "./FeatureShowcase.jsx";
 
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL;
 
-const subjects = [
+const fade = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.5 }
+};
+
+const subjectCards = [
   {
     icon: BookOpen,
     title: "Elementary School",
-    text: "Build strong foundations in reading, writing, and math."
+    text: "Reading, writing and math foundations."
   },
   {
     icon: GraduationCap,
     title: "Middle School",
-    text: "Improve confidence with homework, tests, and study skills."
+    text: "Homework, tests and study skills."
   },
   {
     icon: TrendingUp,
     title: "High School",
-    text: "Get focused help with subjects I can confidently teach."
+    text: "Focused help in subjects I confidently teach."
   }
 ];
 
-const fadeIn = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.12 },
-  transition: { duration: 0.6 }
+const minutes = value =>
+  [60, 90, 120, 150, 180].includes(Number(value))
+    ? Number(value)
+    : 60;
+
+const duration = value => {
+  const n = minutes(value);
+  return `${Math.floor(n / 60)} hour${
+    n >= 120 ? "s" : ""
+  }${n % 60 ? " 30 minutes" : ""}`;
 };
 
-function readableError(error) {
-  const code = error?.code || "";
-
-  if (code.includes("email-already-in-use")) {
-    return "This email already has an account. Try logging in.";
-  }
-
-  if (code.includes("invalid-credential")) {
-    return "Incorrect email or password.";
-  }
-
-  if (code.includes("weak-password")) {
-    return "Choose a stronger password (at least 8 characters).";
-  }
-
-  if (code.includes("permission-denied")) {
-    return "Firebase denied access. Check your Firestore security rules and tutor UID.";
-  }
-
-  if (code.includes("invalid-email")) {
-    return "Enter a valid email address.";
-  }
-
-  if (code.includes("too-many-requests")) {
-    return "Too many attempts. Try again later.";
-  }
-
-  return error?.message || "Something went wrong. Please try again.";
-}
-
-function formatDate(value) {
+const formatDate = value => {
   if (!value) return "Not scheduled";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? "Not scheduled"
+    : d.toLocaleString([], {
+        dateStyle: "medium",
+        timeStyle: "short"
+      });
+};
 
-  const date = new Date(value);
+const dateInput = value => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
 
-  if (Number.isNaN(date.getTime())) {
-    return "Not scheduled";
-  }
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${
+    p(d.getDate())
+  }T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 
-  return date.toLocaleString([], {
-    dateStyle: "medium",
-    timeStyle: "short"
-  });
-}
+const errText = e =>
+  e?.code?.includes("permission-denied")
+    ? "Firebase permission denied. Check published rules and tutor UID."
+    : e?.message || "Something went wrong.";
 
-function normalizedLessonMinutes(value) {
-  const minutes = Number(value);
-  return [60, 90, 120, 150, 180].includes(minutes)
-    ? minutes
-    : 60;
-}
+const classList = s =>
+  !s
+    ? []
+    : Array.isArray(s.classes) && s.classes.length
+      ? s.classes.map(c => ({
+          ...c,
+          meetingUrl:
+            c.meetingUrl ??
+            (c.id === "original" ? s.meetingUrl || "" : ""),
+          nextLessonAt:
+            c.nextLessonAt ??
+            (c.id === "original" ? s.nextLessonAt || "" : ""),
+          durationMinutes: minutes(
+            c.durationMinutes ??
+            (c.id === "original" ? s.durationMinutes : 60)
+          ),
+          homeworkDriveUrl: c.homeworkDriveUrl || "",
+          classworkDriveUrl: c.classworkDriveUrl || ""
+        }))
+      : [
+          {
+            id: "original",
+            name: s.subject || "General tutoring",
+            homeworkDriveUrl: "",
+            classworkDriveUrl: "",
+            meetingUrl: s.meetingUrl || "",
+            nextLessonAt: s.nextLessonAt || "",
+            durationMinutes: minutes(s.durationMinutes)
+          }
+        ];
 
-function formatLessonDuration(value) {
-  const minutes = normalizedLessonMinutes(value);
-  const hours = Math.floor(minutes / 60);
-  const extraMinutes = minutes % 60;
-
-  return `${hours} hour${hours === 1 ? "" : "s"}${
-    extraMinutes ? ` ${extraMinutes} minutes` : ""
-  }`;
-}
-
-function toLocalInput(iso) {
-  if (!iso) return "";
-
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const pad = number => String(number).padStart(2, "0");
-
-  return `${date.getFullYear()}-${pad(
-    date.getMonth() + 1
-  )}-${pad(date.getDate())}T${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`;
-}
+const classOfGrade = g => g.classId || "original";
 
 async function ensureProfile(user) {
   const ref = doc(db, "profiles", user.uid);
-  const existing = await getDoc(ref);
+  const snap = await getDoc(ref);
 
-  if (!existing.exists()) {
+  if (!snap.exists()) {
     await setDoc(ref, {
       email: user.email,
-      name: user.displayName || user.email.split("@")[0],
+      name: user.displayName || user.email?.split("@")[0],
       role: "parent",
       createdAt: serverTimestamp()
     });
   }
 
-  return existing.exists()
-    ? existing.data()?.role || "parent"
+  return snap.exists()
+    ? snap.data()?.role || "parent"
     : "parent";
 }
 
-function Brand({ onClick }) {
+function Brand({ go }) {
   return (
     <button
       className="brand"
-      onClick={onClick}
+      onClick={() => go("home")}
       aria-label="LessonBilly home"
     >
       <span className="brand-symbol">
@@ -190,47 +157,48 @@ function Brand({ onClick }) {
   );
 }
 
-function Header({ setPage, user, onLogout }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function Header({ user, go, logout }) {
+  const [menu, setMenu] = useState(false);
 
-  function go(next) {
-    setPage(next);
-    setMenuOpen(false);
-    window.scrollTo(0, 0);
-  }
+  const navigate = page => {
+    go(page);
+    setMenu(false);
+  };
+
+  const anchor = id => {
+    navigate("home");
+    setTimeout(
+      () => document.getElementById(id)?.scrollIntoView(),
+      0
+    );
+  };
 
   return (
     <header className="site-header">
       <div className="shell header-inner">
-        <Brand onClick={() => go("home")} />
+        <Brand go={navigate} />
 
         <button
           className="mobile-menu"
-          onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle navigation"
+          onClick={() => setMenu(!menu)}
         >
-          {menuOpen ? <X size={23} /> : <Menu size={23} />}
+          {menu ? <X size={23} /> : <Menu size={23} />}
         </button>
 
         <nav
-          className={menuOpen ? "nav open" : "nav"}
+          className={menu ? "nav open" : "nav"}
           aria-label="Main navigation"
         >
-          <button onClick={() => go("home")}>
+          <button onClick={() => navigate("home")}>
             Home
           </button>
 
           <a
             href="/#subjects"
-            onClick={() => {
-              go("home");
-              setTimeout(
-                () =>
-                  document
-                    .getElementById("subjects")
-                    ?.scrollIntoView(),
-                0
-              );
+            onClick={e => {
+              e.preventDefault();
+              anchor("subjects");
             }}
           >
             Subjects
@@ -238,15 +206,9 @@ function Header({ setPage, user, onLogout }) {
 
           <a
             href="/#pricing"
-            onClick={() => {
-              go("home");
-              setTimeout(
-                () =>
-                  document
-                    .getElementById("pricing")
-                    ?.scrollIntoView(),
-                0
-              );
+            onClick={e => {
+              e.preventDefault();
+              anchor("pricing");
             }}
           >
             Pricing
@@ -254,24 +216,23 @@ function Header({ setPage, user, onLogout }) {
 
           <a
             href="/#about"
-            onClick={() => {
-              go("home");
-              setTimeout(
-                () =>
-                  document
-                    .getElementById("about")
-                    ?.scrollIntoView(),
-                0
-              );
+            onClick={e => {
+              e.preventDefault();
+              anchor("about");
             }}
           >
             About
           </a>
 
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
-            onClick={() => setMenuOpen(false)}
+          <button
+            onClick={() =>
+              navigate(user ? "practice" : "auth")
+            }
           >
+            Practice Center
+          </button>
+
+          <a href={`mailto:${CONTACT_EMAIL}`}>
             Contact
           </a>
 
@@ -279,7 +240,7 @@ function Header({ setPage, user, onLogout }) {
             <>
               <button
                 className="button button-small"
-                onClick={() => go("dashboard")}
+                onClick={() => navigate("dashboard")}
               >
                 Dashboard
               </button>
@@ -287,19 +248,18 @@ function Header({ setPage, user, onLogout }) {
               <button
                 className="nav-logout"
                 onClick={() => {
-                  setMenuOpen(false);
-                  onLogout();
+                  setMenu(false);
+                  logout();
                 }}
-                title="Sign out"
               >
-                <LogOut size={18} />
+                <LogOut size={17} />
                 Sign out
               </button>
             </>
           ) : (
             <button
               className="button button-small"
-              onClick={() => go("auth")}
+              onClick={() => navigate("auth")}
             >
               Portal Login
               <ArrowRight size={16} />
@@ -311,15 +271,12 @@ function Header({ setPage, user, onLogout }) {
   );
 }
 
-function Home({ setPage }) {
+function Home({ go, user }) {
   return (
     <main>
       <section className="hero" id="home">
         <div className="shell hero-grid">
-          <motion.div
-            {...fadeIn}
-            className="hero-copy"
-          >
+          <motion.div {...fade} className="hero-copy">
             <div className="eyebrow">
               <Sparkles size={16} />
               PERSONALIZED ONLINE TUTORING
@@ -331,17 +288,15 @@ function Home({ setPage }) {
             </h1>
 
             <p>
-              One-on-one online tutoring, friendly
-              guidance, and clear updates so families
-              can celebrate every win.
+              One-on-one online tutoring, friendly guidance,
+              and clear updates so families can celebrate
+              every win.
             </p>
 
             <div className="hero-buttons">
               <a
                 className="button button-large"
-                href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                  "LessonBilly tutoring inquiry"
-                )}`}
+                href={`mailto:${CONTACT_EMAIL}?subject=LessonBilly%20tutoring%20inquiry`}
               >
                 Ask About Tutoring
                 <ArrowRight size={18} />
@@ -349,10 +304,9 @@ function Home({ setPage }) {
 
               <button
                 className="button-ghost"
-                onClick={() => {
-                  setPage("auth");
-                  window.scrollTo(0, 0);
-                }}
+                onClick={() =>
+                  go(user ? "dashboard" : "auth")
+                }
               >
                 Learning Portal
                 <ChevronRight size={18} />
@@ -379,14 +333,8 @@ function Home({ setPage }) {
 
           <motion.div
             className="hero-visual"
-            initial={{
-              opacity: 0,
-              scale: 0.94
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1
-            }}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
           >
             <div className="illustration-orb orb-one" />
@@ -484,7 +432,7 @@ function Home({ setPage }) {
         <div className="shell trust-items">
           <span>
             <ShieldCheck size={20} />
-            Private student and parent portals
+            Private parent and student portals
           </span>
 
           <span>
@@ -494,18 +442,15 @@ function Home({ setPage }) {
 
           <span>
             <TrendingUp size={20} />
-            Track improvement over time
+            Track improvement
           </span>
         </div>
       </section>
 
-      <section
-        className="section"
-        id="subjects"
-      >
+      <section className="section" id="subjects">
         <div className="shell">
           <motion.div
-            {...fadeIn}
+            {...fade}
             className="section-intro"
           >
             <span className="section-kicker">
@@ -517,27 +462,16 @@ function Home({ setPage }) {
             </h2>
 
             <p>
-              Focused, patient tutoring that meets
-              students where they are.
+              Patient explanations that meet students
+              where they are.
             </p>
           </motion.div>
 
           <div className="subject-grid">
-            {subjects.map(
-              (
-                {
-                  icon: Icon,
-                  title,
-                  text
-                },
-                i
-              ) => (
+            {subjectCards.map(
+              ({ icon: Icon, title, text }) => (
                 <motion.article
-                  {...fadeIn}
-                  transition={{
-                    duration: 0.5,
-                    delay: i * 0.1
-                  }}
+                  {...fade}
                   className="subject-card"
                   key={title}
                 >
@@ -548,11 +482,7 @@ function Home({ setPage }) {
                   <h3>{title}</h3>
                   <p>{text}</p>
 
-                  <a
-                    href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                      "Question about " + title
-                    )}`}
-                  >
+                  <a href={`mailto:${CONTACT_EMAIL}`}>
                     Ask about subjects
                     <ArrowRight size={16} />
                   </a>
@@ -569,21 +499,14 @@ function Home({ setPage }) {
       >
         <div className="shell">
           <motion.div
-            {...fadeIn}
+            {...fade}
             className="section-intro"
           >
             <span className="section-kicker">
               SIMPLE FROM DAY ONE
             </span>
 
-            <h2>
-              How LessonBilly works
-            </h2>
-
-            <p>
-              Stay focused on learning, not complicated
-              technology.
-            </p>
+            <h2>How LessonBilly works</h2>
           </motion.div>
 
           <div className="steps-grid">
@@ -592,23 +515,23 @@ function Home({ setPage }) {
                 n: "01",
                 title: "Get in touch",
                 text:
-                  "Tell me the student's grade level and the subject they need help with."
+                  "Share the student's grade and topics."
               },
               {
                 n: "02",
                 title: "Meet online",
                 text:
-                  "Join your tutoring session using the private meeting link."
+                  "Join using your class meeting link."
               },
               {
                 n: "03",
-                title: "See the progress",
+                title: "Practice and track",
                 text:
-                  "Log in to review published assessment scores and feedback."
+                  "Use tutor-approved quizzes, flashcards, and published grades."
               }
             ].map(s => (
               <motion.div
-                {...fadeIn}
+                {...fade}
                 className="step-card"
                 key={s.n}
               >
@@ -621,44 +544,44 @@ function Home({ setPage }) {
         </div>
       </section>
 
-      <section
-        className="section"
-        id="pricing"
-      >
+      <FeatureShowcase
+        onTry={() =>
+          go(user ? "practice" : "auth")
+        }
+      />
+
+      <section className="section" id="pricing">
         <div className="shell pricing-layout">
-          <motion.div {...fadeIn}>
+          <motion.div {...fade}>
             <span className="section-kicker">
               STRAIGHTFORWARD PRICING
             </span>
 
-            <h2>
-              Great tutoring. Clear pricing.
-            </h2>
+            <h2>Great tutoring. Clear pricing.</h2>
 
             <p className="pricing-lead">
-              A simple hourly rate, with a recommended
-              weekly routine to help students build
-              confidence and consistency.
+              A simple hourly rate and a recommended
+              weekly routine to build consistency.
             </p>
 
-            <div className="pricing-point">
-              <CheckCircle2 size={20} />
-              One-on-one remote tutoring
-            </div>
-
-            <div className="pricing-point">
-              <CheckCircle2 size={20} />
-              Parent access to published grades
-            </div>
-
-            <div className="pricing-point">
-              <CheckCircle2 size={20} />
-              No required long-term contract
-            </div>
+            {[
+              "One-on-one remote tutoring",
+              "Parent access to published grades",
+              "Tutor-approved practice between sessions",
+              "No required long-term contract"
+            ].map(t => (
+              <div
+                className="pricing-point"
+                key={t}
+              >
+                <CheckCircle2 size={20} />
+                {t}
+              </div>
+            ))}
           </motion.div>
 
           <motion.div
-            {...fadeIn}
+            {...fade}
             className="price-card"
           >
             <span className="price-label">
@@ -673,8 +596,7 @@ function Home({ setPage }) {
             <div className="price-divider" />
 
             <p>
-              Recommended: 2 hours per week,
-              per subject
+              Recommended: 2 hours per week per subject
             </p>
 
             <div className="price-summary">
@@ -686,17 +608,15 @@ function Home({ setPage }) {
 
             <a
               className="button button-large button-full"
-              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                "I am interested in LessonBilly tutoring"
-              )}`}
+              href={`mailto:${CONTACT_EMAIL}`}
             >
               Get Started
               <ArrowRight size={18} />
             </a>
 
             <small>
-              Subject availability is confirmed
-              before booking.
+              Subject availability confirmed before
+              booking.
             </small>
           </motion.div>
         </div>
@@ -707,33 +627,28 @@ function Home({ setPage }) {
         id="about"
       >
         <div className="shell pricing-layout">
-          <motion.div {...fadeIn}>
+          <motion.div {...fade}>
             <span className="section-kicker">
               ABOUT LESSONBILLY
             </span>
 
-            <h2>
-              Patient teaching. Clear progress.
-            </h2>
+            <h2>Patient teaching. Clear progress.</h2>
 
             <p>
-              LessonBilly is an independent online
-              tutoring service built around understandable
-              explanations, consistent practice, and
-              helpful feedback for families.
+              LessonBilly is an independent tutoring
+              service focused on understandable explanations,
+              consistent practice, and clear updates
+              to families.
             </p>
 
             <p>
-              Rather than promising instant results,
-              the focus is on building confidence
-              one lesson at a time.
+              Students can review tutor-approved exercises
+              without their answers being stored across
+              sessions.
             </p>
           </motion.div>
 
-          <motion.div
-            {...fadeIn}
-            className="panel"
-          >
+          <motion.div {...fade} className="panel">
             <div className="pricing-point">
               <ShieldCheck size={20} />
               Private student and parent dashboards
@@ -741,12 +656,12 @@ function Home({ setPage }) {
 
             <div className="pricing-point">
               <BookOpen size={20} />
-              Lessons tailored to the student
+              Practice Center flashcards and quizzes
             </div>
 
             <div className="pricing-point">
               <TrendingUp size={20} />
-              Visible assessment updates
+              Published assessment feedback
             </div>
           </motion.div>
         </div>
@@ -754,7 +669,7 @@ function Home({ setPage }) {
 
       <section className="section cta-section">
         <motion.div
-          {...fadeIn}
+          {...fade}
           className="shell cta-content"
         >
           <Sparkles size={26} />
@@ -765,14 +680,12 @@ function Home({ setPage }) {
 
           <p>
             Tell me what your student is working on.
-            We'll start with a simple plan.
+            We'll make a plan.
           </p>
 
           <a
             className="button button-light"
-            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-              "LessonBilly - New tutoring student"
-            )}`}
+            href={`mailto:${CONTACT_EMAIL}`}
           >
             Contact LessonBilly
             <ArrowRight size={18} />
@@ -783,35 +696,31 @@ function Home({ setPage }) {
   );
 }
 
-function PortalAuthCard({ role, onSuccess }) {
-  const isStudent = role === "student";
+function AuthCard({ role, onSuccess }) {
+  const student = role === "student";
 
   const [register, setRegister] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [guardianApproved, setGuardianApproved] =
-    useState(false);
+  const [guardian, setGuardian] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   async function submit(event) {
     event.preventDefault();
     setBusy(true);
-    setMessage("");
+    setError("");
 
     try {
       if (register) {
         if (password.length < 8) {
           throw new Error(
-            "Use a password with at least 8 characters."
+            "Choose a password with at least 8 characters."
           );
         }
 
-        if (
-          isStudent &&
-          !guardianApproved
-        ) {
+        if (student && !guardian) {
           throw new Error(
             "A parent or guardian must approve the student account."
           );
@@ -824,19 +733,12 @@ function PortalAuthCard({ role, onSuccess }) {
             password
           );
 
-        await updateProfile(
-          result.user,
-          {
-            displayName: name.trim()
-          }
-        );
+        await updateProfile(result.user, {
+          displayName: name.trim()
+        });
 
         await setDoc(
-          doc(
-            db,
-            "profiles",
-            result.user.uid
-          ),
+          doc(db, "profiles", result.user.uid),
           {
             email: result.user.email,
             name: name.trim(),
@@ -845,55 +747,44 @@ function PortalAuthCard({ role, onSuccess }) {
           }
         );
 
-        await sendEmailVerification(
-          result.user
-        );
-
-        onSuccess();
+        await sendEmailVerification(result.user);
       } else {
-        const result =
-          await signInWithEmailAndPassword(
-            auth,
-            email.trim(),
-            password
-          );
+        const result = await signInWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password
+        );
 
         if (
           result.user.emailVerified &&
           result.user.uid !== TUTOR_UID
         ) {
-          await result.user.getIdToken(true);
-
           const profile = await getDoc(
-            doc(
-              db,
-              "profiles",
-              result.user.uid
-            )
+            doc(db, "profiles", result.user.uid)
           );
 
-          const actualRole =
+          const actual =
             profile.data()?.role === "student"
               ? "student"
               : "parent";
 
-          if (actualRole !== role) {
+          if (actual !== role) {
             await signOut(auth);
 
             throw new Error(
-              `This is a ${actualRole} account. Please use ${
-                actualRole === "student"
-                  ? "Student Sign In"
-                  : "Parent Sign In"
-              }.`
+              `This is a ${actual} account. Use ${
+                actual === "student"
+                  ? "Student"
+                  : "Parent"
+              } Sign In.`
             );
           }
         }
-
-        onSuccess();
       }
-    } catch (error) {
-      setMessage(readableError(error));
+
+      onSuccess();
+    } catch (e) {
+      setError(errText(e));
     } finally {
       setBusy(false);
     }
@@ -902,35 +793,21 @@ function PortalAuthCard({ role, onSuccess }) {
   return (
     <section className="auth-card portal-auth-card">
       <div className="auth-icon">
-        {isStudent ? (
-          <GraduationCap size={24} />
-        ) : (
-          <Users size={24} />
-        )}
+        {student ? <GraduationCap /> : <Users />}
       </div>
 
       <h2>
         {register
-          ? `Create ${
-              isStudent
-                ? "student"
-                : "parent"
-            } account`
+          ? `Create ${role} account`
           : `${
-              isStudent
-                ? "Student"
-                : "Parent"
+              student ? "Student" : "Parent"
             } Sign In`}
       </h2>
 
       <p>
-        {register
-          ? isStudent
-            ? "A parent or guardian should help set up this student account."
-            : "Create an account to follow your child's learning."
-          : isStudent
-            ? "Access your lessons, scores, and tutor feedback."
-            : "Follow your child's grades and upcoming lessons."}
+        {student
+          ? "Access practice, lessons and published feedback."
+          : "Track your student's classes and progress."}
       </p>
 
       <form
@@ -943,8 +820,6 @@ function PortalAuthCard({ role, onSuccess }) {
             <input
               required
               maxLength={80}
-              placeholder="Full name"
-              autoComplete="name"
               value={name}
               onChange={e =>
                 setName(e.target.value)
@@ -958,8 +833,6 @@ function PortalAuthCard({ role, onSuccess }) {
           <input
             required
             type="email"
-            placeholder="name@example.com"
-            autoComplete="email"
             value={email}
             onChange={e =>
               setEmail(e.target.value)
@@ -973,12 +846,6 @@ function PortalAuthCard({ role, onSuccess }) {
             required
             type="password"
             minLength={register ? 8 : 6}
-            placeholder="Your password"
-            autoComplete={
-              register
-                ? "new-password"
-                : "current-password"
-            }
             value={password}
             onChange={e =>
               setPassword(e.target.value)
@@ -986,21 +853,19 @@ function PortalAuthCard({ role, onSuccess }) {
           />
         </label>
 
-        {register && isStudent && (
+        {register && student && (
           <label className="guardian-confirm">
             <input
               type="checkbox"
-              checked={guardianApproved}
+              checked={guardian}
               onChange={e =>
-                setGuardianApproved(
-                  e.target.checked
-                )
+                setGuardian(e.target.checked)
               }
             />
 
             <span>
-              A parent or guardian approves
-              this student account.
+              A parent or guardian approves this
+              student account.
             </span>
           </label>
         )}
@@ -1008,7 +873,6 @@ function PortalAuthCard({ role, onSuccess }) {
         <button
           className="button button-full"
           disabled={busy}
-          type="submit"
         >
           {busy
             ? "Please wait..."
@@ -1020,12 +884,9 @@ function PortalAuthCard({ role, onSuccess }) {
         </button>
       </form>
 
-      {message && (
-        <div
-          className="form-notice"
-          role="status"
-        >
-          {message}
+      {error && (
+        <div className="alert">
+          {error}
         </div>
       )}
 
@@ -1041,18 +902,14 @@ function PortalAuthCard({ role, onSuccess }) {
           type="button"
           onClick={() => {
             setRegister(!register);
-            setMessage("");
+            setError("");
           }}
         >
           {register
             ? "Back to sign in"
             : `Create ${
-                isStudent
-                  ? "Student"
-                  : "Parent"
+                student ? "Student" : "Parent"
               } Account`}
-
-          <ArrowRight size={17} />
         </button>
       </div>
     </section>
@@ -1062,79 +919,6 @@ function PortalAuthCard({ role, onSuccess }) {
 function AuthScreen({ onSuccess }) {
   return (
     <main className="auth-page">
-      <style>{`
-        .portal-auth-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 24px;
-          align-items: start;
-          max-width: 1050px;
-        }
-
-        .portal-auth-card {
-          height: 100%;
-          min-width: 0;
-        }
-
-        .portal-auth-card h2 {
-          font-size: 26px;
-        }
-
-        .create-account-area {
-          margin-top: 23px;
-          padding-top: 20px;
-          border-top: 1px solid #e5ebf8;
-          display: flex;
-          flex-direction: column;
-          gap: 11px;
-          align-items: stretch;
-        }
-
-        .create-account-area span {
-          font-size: 13px;
-          text-align: center;
-          font-weight: 700;
-          color: #53627e;
-        }
-
-        .create-account-button {
-          background: #edf2ff !important;
-          color: #345bc7 !important;
-          border: 2px solid #8ba7f5 !important;
-          box-shadow: none !important;
-          white-space: normal !important;
-        }
-
-        .create-account-button:hover {
-          background: #e0e9ff !important;
-        }
-
-        .guardian-confirm {
-          flex-direction: row !important;
-          align-items: flex-start;
-          gap: 9px !important;
-          font-weight: 500 !important;
-          line-height: 1.5;
-        }
-
-        .guardian-confirm input {
-          width: auto !important;
-          margin-top: 3px;
-          flex-shrink: 0;
-        }
-
-        @media (max-width: 800px) {
-          .portal-auth-grid {
-            grid-template-columns: 1fr;
-            max-width: 550px;
-          }
-
-          .portal-auth-card {
-            height: auto;
-          }
-        }
-      `}</style>
-
       <div
         className="shell"
         style={{
@@ -1146,43 +930,71 @@ function AuthScreen({ onSuccess }) {
           THE LESSONBILLY LEARNING PORTAL
         </span>
 
-        <h1
-          style={{
-            fontSize:
-              "clamp(29px,3.4vw,42px)",
-            margin: "12px 0"
-          }}
-        >
-          Welcome to LessonBilly
-        </h1>
+        <h1>Welcome to LessonBilly</h1>
 
-        <p style={{ margin: 0 }}>
-          Choose the sign-in option
-          for your account.
+        <p>
+          Choose the sign-in option for your account.
         </p>
       </div>
 
       <div className="shell portal-auth-grid">
-        <PortalAuthCard
+        <AuthCard
           role="student"
           onSuccess={onSuccess}
         />
 
-        <PortalAuthCard
+        <AuthCard
           role="parent"
           onSuccess={onSuccess}
         />
       </div>
+
+      <style>{`
+        .portal-auth-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 24px;
+          align-items: stretch;
+        }
+
+        .create-account-area {
+          margin-top: 22px;
+          padding-top: 19px;
+          border-top: 1px solid #e5ebf8;
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+
+        .create-account-button {
+          background: #edf2ff !important;
+          color: #345bc7 !important;
+          border-color: #91aafa !important;
+        }
+
+        .guardian-confirm {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 9px !important;
+        }
+
+        .guardian-confirm input {
+          width: auto !important;
+        }
+
+        @media (max-width: 800px) {
+          .portal-auth-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </main>
   );
 }
 
-function VerificationScreen({
-  user,
-  onVerified
-}) {
-  const [message, setMessage] = useState("");
+function Verification({ user, done }) {
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
 
   async function check() {
     setBusy(true);
@@ -1193,16 +1005,15 @@ function VerificationScreen({
       await user.getIdToken(true);
 
       if (!user.emailVerified) {
-        setMessage(
-          "Not verified yet. Open the link in your email first."
+        throw new Error(
+          "Open the verification link in your email first."
         );
-        return;
       }
 
       await ensureProfile(user);
-      onVerified();
-    } catch (error) {
-      setMessage(readableError(error));
+      done();
+    } catch (e) {
+      setMessage(errText(e));
     } finally {
       setBusy(false);
     }
@@ -1213,12 +1024,9 @@ function VerificationScreen({
 
     try {
       await sendEmailVerification(user);
-
-      setMessage(
-        "Verification email sent. Check your inbox and spam folder."
-      );
-    } catch (error) {
-      setMessage(readableError(error));
+      setMessage("Verification email sent.");
+    } catch (e) {
+      setMessage(errText(e));
     } finally {
       setBusy(false);
     }
@@ -1227,20 +1035,17 @@ function VerificationScreen({
   return (
     <main className="auth-page">
       <div className="shell verify-wrap">
-        <div className="auth-card">
-          <Mail
-            className="verify-symbol"
-            size={34}
-          />
+        <div
+          className="auth-card"
+          style={{ textAlign: "center" }}
+        >
+          <Mail size={34} />
 
-          <h2>
-            Verify your email
-          </h2>
+          <h2>Verify your email</h2>
 
           <p>
-            We sent a confirmation link to{" "}
+            We sent a verification link to{" "}
             <strong>{user.email}</strong>.
-            Open it, then return here.
           </p>
 
           <button
@@ -1249,22 +1054,19 @@ function VerificationScreen({
             disabled={busy}
           >
             I've verified my email
-            <CheckCircle2 size={18} />
           </button>
 
           <button
             className="text-button"
             onClick={resend}
             disabled={busy}
+            style={{ marginTop: 18 }}
           >
             Resend verification email
           </button>
 
           {message && (
-            <div
-              className="form-notice"
-              role="status"
-            >
+            <div className="form-notice">
               {message}
             </div>
           )}
@@ -1274,16 +1076,12 @@ function VerificationScreen({
   );
 }
 
-function GradeList({
-  grades,
-  tutor = false,
-  onPublish
-}) {
+function GradeList({ grades, onPublish }) {
   if (!grades.length) {
     return (
       <div className="empty-small">
         No{" "}
-        {tutor
+        {onPublish
           ? "assessments"
           : "published grades"}{" "}
         yet.
@@ -1315,7 +1113,7 @@ function GradeList({
             </small>
           </div>
 
-          {tutor && !g.published ? (
+          {onPublish && !g.published ? (
             <button
               className="button button-small"
               onClick={() =>
@@ -1337,244 +1135,88 @@ function GradeList({
   );
 }
 
-// Older records without a classes array still work.
-// Their original subject remains the first class.
-function classesForStudent(student) {
-  if (!student) return [];
+function LearnerDashboard({ user, role }) {
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState("");
+  const [classId, setClassId] = useState("");
+  const [grades, setGrades] = useState([]);
+  const [error, setError] = useState("");
 
-  if (
-    Array.isArray(student.classes) &&
-    student.classes.length
-  ) {
-    return student.classes
-      .filter(
-        c =>
-          c &&
-          typeof c.id === "string" &&
-          typeof c.name === "string"
-      )
-      .map(c => ({
-        id: c.id,
-        name: c.name,
-
-        homeworkDriveUrl:
-          c.homeworkDriveUrl || "",
-
-        classworkDriveUrl:
-          c.classworkDriveUrl || "",
-
-        meetingUrl:
-          c.meetingUrl ??
-          (c.id === "original"
-            ? student.meetingUrl || ""
-            : ""),
-
-        nextLessonAt:
-          c.nextLessonAt ??
-          (c.id === "original"
-            ? student.nextLessonAt || ""
-            : ""),
-
-        durationMinutes:
-          normalizedLessonMinutes(
-            c.durationMinutes ??
-            (c.id === "original"
-              ? student.durationMinutes
-              : 60)
+  useEffect(
+    () =>
+      onSnapshot(
+        query(
+          collection(db, "students"),
+          where(
+            role === "student"
+              ? "studentUids"
+              : "parentUids",
+            "array-contains",
+            user.uid
           )
-      }));
-  }
-
-  return [
-    {
-      id: "original",
-      name:
-        student.subject ||
-        "General tutoring",
-
-      homeworkDriveUrl: "",
-      classworkDriveUrl: "",
-
-      meetingUrl:
-        student.meetingUrl || "",
-
-      nextLessonAt:
-        student.nextLessonAt || "",
-
-      durationMinutes:
-        normalizedLessonMinutes(
-          student.durationMinutes
-        )
-    }
-  ];
-}
-
-function gradeClassId(grade) {
-  return grade.classId || "original";
-}
-
-function StudentTabs({
-  students,
-  selectedId,
-  setSelectedId
-}) {
-  if (!students.length) {
-    return null;
-  }
-
-  return (
-    <div className="student-tabs">
-      {students.map(s => (
-        <button
-          key={s.id}
-          className={
-            selectedId === s.id
-              ? "selected"
-              : ""
-          }
-          onClick={() =>
-            setSelectedId(s.id)
-          }
-        >
-          {s.name}
-        </button>
-      ))}
-    </div>
+        ),
+        snap =>
+          setStudents(
+            snap.docs.map(d => ({
+              id: d.id,
+              ...d.data()
+            }))
+          ),
+        e => setError(errText(e))
+      ),
+    [user.uid, role]
   );
-}
-
-function LearnerDashboard({
-  user,
-  role
-}) {
-  const [students, setStudents] =
-    useState([]);
-
-  const [selectedId, setSelectedId] =
-    useState("");
-
-  const [
-    selectedClassId,
-    setSelectedClassId
-  ] = useState("");
-
-  const [grades, setGrades] =
-    useState([]);
-
-  const [error, setError] =
-    useState("");
 
   useEffect(() => {
-    const q = query(
-      collection(db, "students"),
-      where(
-        role === "student"
-          ? "studentUids"
-          : "parentUids",
-        "array-contains",
-        user.uid
-      )
-    );
-
-    return onSnapshot(
-      q,
-      snapshot => {
-        setStudents(
-          snapshot.docs.map(d => ({
-            id: d.id,
-            ...d.data()
-          }))
-        );
-      },
-      e => setError(
-        readableError(e)
-      )
-    );
-  }, [
-    user.uid,
-    role
-  ]);
-
-  useEffect(() => {
-    if (
-      !students.some(
-        s => s.id === selectedId
-      )
-    ) {
-      setSelectedId(
-        students[0]?.id || ""
-      );
-
-      setSelectedClassId("");
+    if (!students.some(s => s.id === studentId)) {
+      setStudentId(students[0]?.id || "");
     }
-  }, [
-    students,
-    selectedId
-  ]);
+  }, [students, studentId]);
 
   useEffect(() => {
-    if (!selectedId) {
+    if (!studentId) {
       setGrades([]);
       return;
     }
 
-    const q = query(
-      collection(
-        db,
-        "students",
-        selectedId,
-        "grades"
-      ),
-      where(
-        "published",
-        "==",
-        true
-      )
-    );
-
     return onSnapshot(
-      q,
-      snapshot => {
+      query(
+        collection(
+          db,
+          "students",
+          studentId,
+          "grades"
+        ),
+        where("published", "==", true)
+      ),
+      snap =>
         setGrades(
-          snapshot.docs.map(d => ({
+          snap.docs.map(d => ({
             id: d.id,
             ...d.data()
           }))
-        );
-      },
-      e => setError(
-        readableError(e)
-      )
+        ),
+      e => setError(errText(e))
     );
-  }, [selectedId]);
+  }, [studentId]);
 
-  const selected = students.find(
-    s => s.id === selectedId
+  const student = students.find(
+    s => s.id === studentId
   );
 
-  const classes =
-    classesForStudent(selected);
+  const classes = classList(student);
 
   const currentClass =
-    classes.find(
-      c => c.id === selectedClassId
-    ) || classes[0];
+    classes.find(c => c.id === classId) || classes[0];
 
   const classGrades = grades.filter(
-    g =>
-      gradeClassId(g) ===
-      currentClass?.id
+    g => classOfGrade(g) === currentClass?.id
   );
 
   const totals = classGrades.reduce(
-    (acc, g) => ({
-      earned:
-        acc.earned +
-        Number(g.earned || 0),
-
-      possible:
-        acc.possible +
-        Number(g.possible || 0)
+    (a, g) => ({
+      earned: a.earned + g.earned,
+      possible: a.possible + g.possible
     }),
     {
       earned: 0,
@@ -1588,8 +1230,9 @@ function LearnerDashboard({
         <div>
           <span className="section-kicker">
             {role === "student"
-              ? "STUDENT PORTAL"
-              : "PARENT PORTAL"}
+              ? "STUDENT"
+              : "PARENT"}{" "}
+            PORTAL
           </span>
 
           <h1>
@@ -1600,81 +1243,73 @@ function LearnerDashboard({
 
           <p>
             Welcome,{" "}
-            {user.displayName ||
-              user.email}.
+            {user.displayName || user.email}.
             Published results appear here.
           </p>
         </div>
 
-        <div className="secure-chip">
+        <span className="secure-chip">
           <LockKeyhole size={16} />
           Private access
-        </div>
+        </span>
       </div>
 
       {error && (
-        <div className="alert">
-          {error}
-        </div>
+        <div className="alert">{error}</div>
       )}
 
       {!students.length ? (
         <div className="panel empty-panel">
           <Users size={35} />
 
-          <h2>
-            Your account is ready.
-          </h2>
+          <h2>Your account is ready.</h2>
 
           <p>
             Your tutor will connect your account
-            to a student record after confirming
-            your email. No grades are visible yet.
+            to a student record.
           </p>
 
           <div className="hint-box">
             Your email:{" "}
-            <strong>
-              {user.email}
-            </strong>
+            <strong>{user.email}</strong>
           </div>
         </div>
       ) : (
         <>
-          <StudentTabs
-            students={students}
-            selectedId={selectedId}
-            setSelectedId={id => {
-              setSelectedId(id);
-              setSelectedClassId("");
-            }}
-          />
+          <div className="student-tabs">
+            {students.map(s => (
+              <button
+                className={
+                  studentId === s.id ? "selected" : ""
+                }
+                key={s.id}
+                onClick={() => {
+                  setStudentId(s.id);
+                  setClassId("");
+                }}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
 
-          <section
+          <div
             className="panel"
-            style={{ marginBottom: 22 }}
+            style={{ marginBottom: 20 }}
           >
-            <div className="panel-heading">
-              <h2>Classes</h2>
-            </div>
+            <h2>Classes</h2>
 
-            <div
-              className="student-tabs"
-              style={{ marginBottom: 0 }}
-            >
+            <div className="student-tabs">
               {classes.map(c => (
                 <button
                   key={c.id}
                   className={
-                    c.id ===
-                    currentClass?.id
+                    currentClass?.id === c.id
                       ? "selected"
                       : ""
                   }
                   onClick={() =>
-                    setSelectedClassId(
-                      c.id
-                    )
+                    setClassId(c.id)
                   }
                 >
                   {c.name}
@@ -1682,42 +1317,25 @@ function LearnerDashboard({
               ))}
             </div>
 
-            <p
-              className="muted tiny"
-              style={{
-                marginBottom: 0
-              }}
-            >
+            <p className="muted tiny">
               Grade level:{" "}
-              {selected?.gradeLevel ||
-                "Not set"}.
-              Choose a class to view
-              its grades, meeting link,
-              homework, and classwork.
+              {student?.gradeLevel || "Not set"}.
+              Visit Practice Center for flashcards
+              and quizzes.
             </p>
-          </section>
+          </div>
 
           <div className="metric-grid">
             <div className="metric">
               <small>
                 Published assessments
               </small>
-
-              <strong>
-                {classGrades.length}
-              </strong>
-
-              <span>
-                For{" "}
-                {currentClass?.name}
-              </span>
+              <strong>{classGrades.length}</strong>
+              <span>{currentClass?.name}</span>
             </div>
 
             <div className="metric">
-              <small>
-                Class score
-              </small>
-
+              <small>Class score</small>
               <strong>
                 {totals.possible
                   ? `${Math.round(
@@ -1727,54 +1345,33 @@ function LearnerDashboard({
                     )}%`
                   : "-"}
               </strong>
-
-              <span>
-                Based on points
-                in this class
-              </span>
             </div>
 
             <div className="metric">
-              <small>
-                Selected class
-              </small>
-
+              <small>Selected class</small>
               <strong className="metric-subject">
-                {currentClass?.name ||
-                  "-"}
+                {currentClass?.name}
               </strong>
-
-              <span>
-                {selected?.gradeLevel ||
-                  "Learning support"}
-              </span>
+              <span>{student?.gradeLevel}</span>
             </div>
           </div>
 
           <div className="dashboard-grid">
             <section className="panel">
               <div className="panel-heading">
-                <h2>
-                  {currentClass?.name}
-                  {" - "}Grade history
-                </h2>
-
+                <h2>Grade history</h2>
                 <span className="chip">
                   Published only
                 </span>
               </div>
 
-              <GradeList
-                grades={classGrades}
-              />
+              <GradeList grades={classGrades} />
             </section>
 
             <section className="panel">
               <div className="panel-heading">
                 <h2>
-                  Next{" "}
-                  {currentClass?.name}{" "}
-                  lesson
+                  Next {currentClass?.name} lesson
                 </h2>
               </div>
 
@@ -1785,7 +1382,7 @@ function LearnerDashboard({
               </p>
 
               <p className="muted">
-                {formatLessonDuration(
+                {duration(
                   currentClass?.durationMinutes
                 )}{" "}
                 planned session
@@ -1794,9 +1391,7 @@ function LearnerDashboard({
               {currentClass?.meetingUrl ? (
                 <a
                   className="button button-full"
-                  href={
-                    currentClass.meetingUrl
-                  }
+                  href={currentClass.meetingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -1805,17 +1400,16 @@ function LearnerDashboard({
                 </a>
               ) : (
                 <div className="empty-small">
-                  Your tutor hasn't provided
-                  a meeting link for this class.
+                  Your tutor hasn't shared a link.
                 </div>
               )}
             </section>
           </div>
 
-          {selected && currentClass && (
+          {currentClass && (
             <DriveMaterials
-              key={`${selected.id}:${currentClass.id}`}
-              studentId={selected.id}
+              key={`${studentId}:${currentClass.id}`}
+              studentId={studentId}
               currentClass={currentClass}
             />
           )}
@@ -1826,128 +1420,80 @@ function LearnerDashboard({
 }
 
 function TutorDashboard({ user }) {
-  const [students, setStudents] =
-    useState([]);
+  const [students, setStudents] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [studentId, setStudentId] = useState("");
+  const [classId, setClassId] = useState("");
+  const [grades, setGrades] = useState([]);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const [profiles, setProfiles] =
-    useState([]);
+  const [newStudent, setNewStudent] = useState({
+    name: "",
+    parentEmail: "",
+    studentEmail: "",
+    gradeLevel: "",
+    subject: ""
+  });
 
-  const [selectedId, setSelectedId] =
-    useState("");
+  const [newGrade, setNewGrade] = useState({
+    title: "",
+    earned: "",
+    possible: "",
+    feedback: ""
+  });
 
-  const [grades, setGrades] =
-    useState([]);
+  const [linkEmail, setLinkEmail] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [newClass, setNewClass] = useState("");
+  const [rename, setRename] = useState("");
 
-  const [error, setError] =
-    useState("");
-
-  const [notice, setNotice] =
-    useState("");
-
-  const [busy, setBusy] =
-    useState(false);
-
-  const [newStudent, setNewStudent] =
-    useState({
-      name: "",
-      parentEmail: "",
-      gradeLevel: "",
-      subject: ""
-    });
-
-  const [newGrade, setNewGrade] =
-    useState({
-      title: "",
-      earned: "",
-      possible: "",
-      feedback: ""
-    });
-
-  const [session, setSession] =
-    useState({
-      meetingUrl: "",
-      lessonAt: "",
-      durationMinutes: 60
-    });
-
-  const [studentEmail, setStudentEmail] =
-    useState("");
-
-  const [linkEmail, setLinkEmail] =
-    useState("");
-
-  const [
-    selectedClassId,
-    setSelectedClassId
-  ] = useState("");
-
-  const [
-    gradeLevelEdit,
-    setGradeLevelEdit
-  ] = useState("");
-
-  const [newClassName, setNewClassName] =
-    useState("");
-
-  const [
-    classNameEdit,
-    setClassNameEdit
-  ] = useState("");
+  const [session, setSession] = useState({
+    meetingUrl: "",
+    lessonAt: "",
+    durationMinutes: 60
+  });
 
   useEffect(() => {
-    const unsubStudents = onSnapshot(
+    const a = onSnapshot(
       collection(db, "students"),
-      snapshot => {
+      snap =>
         setStudents(
-          snapshot.docs.map(d => ({
+          snap.docs.map(d => ({
             id: d.id,
             ...d.data()
           }))
-        );
-      },
-      e => setError(
-        readableError(e)
-      )
+        ),
+      e => setError(errText(e))
     );
 
-    const unsubProfiles = onSnapshot(
+    const b = onSnapshot(
       collection(db, "profiles"),
-      snapshot => {
+      snap =>
         setProfiles(
-          snapshot.docs.map(d => ({
+          snap.docs.map(d => ({
             id: d.id,
             ...d.data()
           }))
-        );
-      },
-      e => setError(
-        readableError(e)
-      )
+        ),
+      e => setError(errText(e))
     );
 
     return () => {
-      unsubStudents();
-      unsubProfiles();
+      a();
+      b();
     };
   }, []);
 
   useEffect(() => {
-    if (
-      !students.find(
-        s => s.id === selectedId
-      )
-    ) {
-      setSelectedId(
-        students[0]?.id || ""
-      );
+    if (!students.some(s => s.id === studentId)) {
+      setStudentId(students[0]?.id || "");
     }
-  }, [
-    students,
-    selectedId
-  ]);
+  }, [students, studentId]);
 
   useEffect(() => {
-    if (!selectedId) {
+    if (!studentId) {
       setGrades([]);
       return;
     }
@@ -1956,166 +1502,195 @@ function TutorDashboard({ user }) {
       collection(
         db,
         "students",
-        selectedId,
+        studentId,
         "grades"
       ),
-      snapshot => {
+      snap =>
         setGrades(
-          snapshot.docs.map(d => ({
+          snap.docs.map(d => ({
             id: d.id,
             ...d.data()
           }))
-        );
-      },
-      e => setError(
-        readableError(e)
-      )
+        ),
+      e => setError(errText(e))
     );
-  }, [selectedId]);
+  }, [studentId]);
 
-  const selected = students.find(
-    s => s.id === selectedId
+  const student = students.find(
+    s => s.id === studentId
   );
 
-  const classes =
-    classesForStudent(selected);
+  const classes = classList(student);
 
   const currentClass =
-    classes.find(
-      c => c.id === selectedClassId
-    ) || classes[0];
+    classes.find(c => c.id === classId) || classes[0];
 
-  useEffect(() => {
-    setGradeLevelEdit(
-      selected?.gradeLevel || ""
-    );
-  }, [
-    selectedId,
-    selected?.gradeLevel
-  ]);
+  useEffect(
+    () => setLinkEmail(student?.studentEmail || ""),
+    [studentId, student?.studentEmail]
+  );
 
-  useEffect(() => {
-    setClassNameEdit(
-      currentClass?.name || ""
-    );
-  }, [
-    selectedId,
-    currentClass?.id,
-    currentClass?.name
-  ]);
+  useEffect(
+    () => setGradeLevel(student?.gradeLevel || ""),
+    [studentId, student?.gradeLevel]
+  );
+
+  useEffect(
+    () => setRename(currentClass?.name || ""),
+    [studentId, currentClass?.id, currentClass?.name]
+  );
 
   useEffect(() => {
     setSession({
-      meetingUrl:
-        currentClass?.meetingUrl || "",
-
-      lessonAt:
-        toLocalInput(
-          currentClass?.nextLessonAt
-        ),
-
-      durationMinutes:
-        normalizedLessonMinutes(
-          currentClass?.durationMinutes
-        )
+      meetingUrl: currentClass?.meetingUrl || "",
+      lessonAt: dateInput(
+        currentClass?.nextLessonAt
+      ),
+      durationMinutes: minutes(
+        currentClass?.durationMinutes
+      )
     });
   }, [
-    selectedId,
+    studentId,
     currentClass?.id,
     currentClass?.meetingUrl,
     currentClass?.nextLessonAt,
     currentClass?.durationMinutes
   ]);
 
-  useEffect(() => {
-    setLinkEmail(
-      selected?.studentEmail || ""
-    );
-  }, [
-    selectedId,
-    selected?.studentEmail
-  ]);
-
-  const sortedGrades = grades
+  const sorted = grades
     .filter(
-      g =>
-        gradeClassId(g) ===
-        currentClass?.id
+      g => classOfGrade(g) === currentClass?.id
     )
     .sort(
       (a, b) =>
-        (b.createdAt?.seconds ||
-          0) -
-        (a.createdAt?.seconds ||
-          0)
+        (b.createdAt?.seconds || 0) -
+        (a.createdAt?.seconds || 0)
     );
 
-  async function saveGradeLevel(event) {
-    event.preventDefault();
-
-    if (!selected) return;
-
+  async function run(operation, success) {
+    setBusy(true);
     setError("");
     setNotice("");
-    setBusy(true);
 
     try {
-      const level =
-        gradeLevelEdit.trim();
-
-      if (
-        !level ||
-        level.length > 30
-      ) {
-        throw new Error(
-          "Enter a grade level of 1 to 30 characters."
-        );
-      }
-
-      await updateDoc(
-        doc(
-          db,
-          "students",
-          selected.id
-        ),
-        {
-          gradeLevel: level
-        }
-      );
-
-      setNotice(
-        `Updated ${selected.name}'s grade level to ${level}.`
-      );
+      await operation();
+      setNotice(success);
     } catch (e) {
-      setError(readableError(e));
+      setError(errText(e));
     } finally {
       setBusy(false);
     }
   }
 
-  async function addClass(event) {
+  async function createStudent(event) {
     event.preventDefault();
 
-    if (!selected) return;
+    await run(async () => {
+      const email = newStudent.parentEmail
+        .trim()
+        .toLowerCase();
 
-    setError("");
-    setNotice("");
-    setBusy(true);
+      const p = profiles.find(
+        x =>
+          x.email?.toLowerCase() === email &&
+          x.role === "parent"
+      );
 
-    try {
-      const name =
-        newClassName.trim();
-
-      if (
-        !name ||
-        name.length > 60
-      ) {
+      if (!p) {
         throw new Error(
-          "Enter a class name of 1 to 60 characters."
+          "The parent must register and verify first."
         );
       }
 
+      const se = newStudent.studentEmail
+        .trim()
+        .toLowerCase();
+
+      const sp = se
+        ? profiles.find(
+            x =>
+              x.email?.toLowerCase() === se &&
+              x.role === "student"
+          )
+        : null;
+
+      if (se && !sp) {
+        throw new Error(
+          "Student profile not found. Ask them to register and verify or leave it blank."
+        );
+      }
+
+      const first = newStudent.subject.trim();
+
+      const ref = await addDoc(
+        collection(db, "students"),
+        {
+          name: newStudent.name.trim(),
+          parentEmail: email,
+          parentUids: [p.id],
+          studentEmail: sp?.email || "",
+          studentUids: sp ? [sp.id] : [],
+          gradeLevel: newStudent.gradeLevel.trim(),
+          subject: first,
+
+          classes: [
+            {
+              id: "original",
+              name: first,
+              homeworkDriveUrl: "",
+              classworkDriveUrl: "",
+              meetingUrl: "",
+              nextLessonAt: "",
+              durationMinutes: 60
+            }
+          ],
+
+          meetingUrl: "",
+          nextLessonAt: "",
+          durationMinutes: 60,
+          createdAt: serverTimestamp()
+        }
+      );
+
+      setStudentId(ref.id);
+      setClassId("");
+
+      setNewStudent({
+        name: "",
+        parentEmail: "",
+        studentEmail: "",
+        gradeLevel: "",
+        subject: ""
+      });
+    }, "Student added and linked to the parent.");
+  }
+
+  async function saveGradeLevel(event) {
+    event.preventDefault();
+
+    await run(async () => {
+      if (!gradeLevel.trim()) {
+        throw new Error("Enter a grade level.");
+      }
+
+      await updateDoc(
+        doc(db, "students", studentId),
+        {
+          gradeLevel: gradeLevel.trim()
+        }
+      );
+    }, "Grade level updated.");
+  }
+
+  async function addClass(event) {
+    event.preventDefault();
+
+    await run(async () => {
+      const name = newClass.trim();
+
       if (
+        !name ||
         classes.some(
           c =>
             c.name.toLowerCase() ===
@@ -2123,23 +1698,16 @@ function TutorDashboard({ user }) {
         )
       ) {
         throw new Error(
-          "This student already has a class with that name."
+          "Enter a new, distinct class name."
         );
       }
 
       const id = doc(
-        collection(
-          db,
-          "students"
-        )
+        collection(db, "students")
       ).id;
 
       await updateDoc(
-        doc(
-          db,
-          "students",
-          selected.id
-        ),
+        doc(db, "students", studentId),
         {
           classes: [
             ...classes,
@@ -2156,299 +1724,83 @@ function TutorDashboard({ user }) {
         }
       );
 
-      setSelectedClassId(id);
-      setNewClassName("");
-
-      setNotice(
-        `${name} added for ${selected.name}.`
-      );
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
+      setClassId(id);
+      setNewClass("");
+    }, "Class added.");
   }
 
   async function renameClass(event) {
     event.preventDefault();
 
-    if (
-      !selected ||
-      !currentClass
-    ) {
-      return;
-    }
-
-    setError("");
-    setNotice("");
-    setBusy(true);
-
-    try {
-      const name =
-        classNameEdit.trim();
+    await run(async () => {
+      const name = rename.trim();
 
       if (
         !name ||
-        name.length > 60
-      ) {
-        throw new Error(
-          "Enter a class name of 1 to 60 characters."
-        );
-      }
-
-      if (
         classes.some(
           c =>
-            c.id !==
-              currentClass.id &&
+            c.id !== currentClass.id &&
             c.name.toLowerCase() ===
               name.toLowerCase()
         )
       ) {
         throw new Error(
-          "This student already has a class with that name."
+          "Choose a unique class name."
         );
       }
 
       await updateDoc(
-        doc(
-          db,
-          "students",
-          selected.id
-        ),
+        doc(db, "students", studentId),
         {
           classes: classes.map(c =>
             c.id === currentClass.id
-              ? {
-                  ...c,
-                  name
-                }
+              ? { ...c, name }
               : c
           )
         }
       );
-
-      setNotice(
-        `Class renamed to ${name}. Existing grades are preserved.`
-      );
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
+    }, "Class renamed; grades remain intact.");
   }
 
-  async function createStudent(event) {
+  async function linkStudent(event) {
     event.preventDefault();
 
-    setError("");
-    setNotice("");
-    setBusy(true);
+    await run(async () => {
+      const email = linkEmail
+        .trim()
+        .toLowerCase();
 
-    try {
-      const email =
-        newStudent.parentEmail
-          .trim()
-          .toLowerCase();
-
-      const parent = profiles.find(
-        p =>
-          p.email?.toLowerCase() ===
-            email &&
-          p.role !== "student"
+      const p = profiles.find(
+        x =>
+          x.email?.toLowerCase() === email &&
+          x.role === "student"
       );
 
-      if (!parent) {
+      if (email && !p) {
         throw new Error(
-          "That parent hasn't completed registration and email verification yet. Ask them to sign up first."
+          "No student profile found. The student must register first."
         );
       }
 
-      const registeredStudent =
-        studentEmail.trim()
-          ? profiles.find(
-              p =>
-                p.email?.toLowerCase() ===
-                  studentEmail
-                    .trim()
-                    .toLowerCase() &&
-                p.role === "student"
-            )
-          : null;
-
-      if (
-        studentEmail.trim() &&
-        !registeredStudent
-      ) {
-        throw new Error(
-          "Student account not found. Ask the student and guardian to register and verify their email first, or leave this blank and link it later."
-        );
-      }
-
-      const ref = await addDoc(
-        collection(db, "students"),
+      await updateDoc(
+        doc(db, "students", studentId),
         {
-          name:
-            newStudent.name.trim(),
-
-          parentEmail: email,
-
-          parentUids: [
-            parent.id
-          ],
-
-          studentUids:
-            registeredStudent
-              ? [registeredStudent.id]
-              : [],
-
-          studentEmail:
-            registeredStudent?.email || "",
-
-          gradeLevel:
-            newStudent.gradeLevel.trim(),
-
-          subject:
-            newStudent.subject.trim(),
-
-          classes: [
-            {
-              id: "original",
-              name:
-                newStudent.subject.trim(),
-
-              homeworkDriveUrl: "",
-              classworkDriveUrl: "",
-
-              meetingUrl: "",
-              nextLessonAt: "",
-              durationMinutes: 60
-            }
-          ],
-
-          meetingUrl: "",
-          nextLessonAt: "",
-          durationMinutes: 60,
-
-          createdAt:
-            serverTimestamp()
+          studentEmail: email || "",
+          studentUids: p ? [p.id] : []
         }
       );
-
-      setSelectedId(ref.id);
-      setSelectedClassId("");
-      setStudentEmail("");
-
-      setNewStudent({
-        name: "",
-        parentEmail: "",
-        gradeLevel: "",
-        subject: ""
-      });
-
-      setNotice(
-        "Student added and connected to the parent."
-      );
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function linkStudentAccount(event) {
-    event.preventDefault();
-
-    if (!selected) return;
-
-    setError("");
-    setNotice("");
-    setBusy(true);
-
-    try {
-      const email =
-        linkEmail
-          .trim()
-          .toLowerCase();
-
-      if (!email) {
-        await updateDoc(
-          doc(
-            db,
-            "students",
-            selected.id
-          ),
-          {
-            studentUids: [],
-            studentEmail: ""
-          }
-        );
-
-        setNotice(
-          "Student sign-in access unlinked."
-        );
-      } else {
-        const studentProfile =
-          profiles.find(
-            p =>
-              p.email?.toLowerCase() ===
-                email &&
-              p.role === "student"
-          );
-
-        if (!studentProfile) {
-          throw new Error(
-            "No student profile found with that email. Have the student register and verify first."
-          );
-        }
-
-        await updateDoc(
-          doc(
-            db,
-            "students",
-            selected.id
-          ),
-          {
-            studentUids: [
-              studentProfile.id
-            ],
-            studentEmail: email
-          }
-        );
-
-        setNotice(
-          "Student account linked. The student can now see their own records after email verification."
-        );
-      }
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
+    }, "Student account access updated.");
   }
 
   async function addGrade(event) {
     event.preventDefault();
 
-    if (
-      !selected ||
-      !currentClass
-    ) {
-      return;
-    }
-
-    setError("");
-    setNotice("");
-    setBusy(true);
-
-    try {
-      const earned =
-        Number(newGrade.earned);
-
-      const possible =
-        Number(newGrade.possible);
+    await run(async () => {
+      const earned = Number(newGrade.earned);
+      const possible = Number(newGrade.possible);
 
       if (
+        !newGrade.title.trim() ||
         !Number.isFinite(earned) ||
         !Number.isFinite(possible) ||
         earned < 0 ||
@@ -2456,7 +1808,7 @@ function TutorDashboard({ user }) {
         earned > possible
       ) {
         throw new Error(
-          "Enter valid points. Earned points cannot exceed possible points."
+          "Enter a title and valid earned/possible points."
         );
       }
 
@@ -2464,26 +1816,17 @@ function TutorDashboard({ user }) {
         collection(
           db,
           "students",
-          selected.id,
+          studentId,
           "grades"
         ),
         {
-          title:
-            newGrade.title.trim(),
-
-          classId:
-            currentClass.id,
-
+          title: newGrade.title.trim(),
           earned,
           possible,
-
-          feedback:
-            newGrade.feedback.trim(),
-
+          feedback: newGrade.feedback.trim(),
+          classId: currentClass.id,
           published: false,
-
-          createdAt:
-            serverTimestamp()
+          createdAt: serverTimestamp()
         }
       );
 
@@ -2493,159 +1836,88 @@ function TutorDashboard({ user }) {
         possible: "",
         feedback: ""
       });
-
-      setNotice(
-        "Assessment saved as a private draft."
-      );
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
+    }, "Grade saved as a private draft.");
   }
 
-  async function publishGrade(gradeId) {
+  async function publishGrade(id) {
     if (
       !window.confirm(
-        "Publish this score so the student and parent can view it?"
+        "Publish this score to the family?"
       )
     ) {
       return;
     }
 
-    setError("");
-    setNotice("");
-
-    try {
+    await run(async () => {
       await updateDoc(
         doc(
           db,
           "students",
-          selectedId,
+          studentId,
           "grades",
-          gradeId
+          id
         ),
         {
           published: true,
-          publishedAt:
-            serverTimestamp()
+          publishedAt: serverTimestamp()
         }
       );
-
-      setNotice(
-        "Score published. No email was automatically sent."
-      );
-    } catch (e) {
-      setError(readableError(e));
-    }
+    }, "Score published; email notification is manual.");
   }
 
   async function saveSession(event) {
     event.preventDefault();
 
-    if (
-      !selected ||
-      !currentClass
-    ) {
-      return;
-    }
-
-    setError("");
-    setNotice("");
-    setBusy(true);
-
-    try {
-      if (
-        session.meetingUrl
-      ) {
-        const url = new URL(
-          session.meetingUrl
-        );
-
-        if (
-          url.protocol !== "https:" ||
-          url.hostname !==
-            "meet.google.com"
-        ) {
-          throw new Error(
-            "Please paste a valid https://meet.google.com meeting link."
-          );
-        }
-      }
+    await run(async () => {
+      const url = session.meetingUrl.trim();
 
       if (
-        session.lessonAt &&
-        Number.isNaN(
-          new Date(
-            session.lessonAt
-          ).getTime()
+        url &&
+        (
+          new URL(url).protocol !== "https:" ||
+          new URL(url).hostname !== "meet.google.com"
         )
       ) {
         throw new Error(
-          "Enter a valid lesson date."
+          "Enter a valid Google Meet HTTPS link."
         );
       }
 
       await updateDoc(
-        doc(
-          db,
-          "students",
-          selected.id
-        ),
+        doc(db, "students", studentId),
         {
           classes: classes.map(c =>
             c.id === currentClass.id
               ? {
                   ...c,
-                  meetingUrl:
-                    session.meetingUrl.trim(),
-
-                  nextLessonAt:
-                    session.lessonAt
-                      ? new Date(
-                          session.lessonAt
-                        ).toISOString()
-                      : "",
-
-                  durationMinutes:
-                    Number(
-                      session.durationMinutes
-                    )
+                  meetingUrl: url,
+                  nextLessonAt: session.lessonAt
+                    ? new Date(
+                        session.lessonAt
+                      ).toISOString()
+                    : "",
+                  durationMinutes: minutes(
+                    session.durationMinutes
+                  )
                 }
               : c
           )
         }
       );
-
-      setNotice(
-        `Lesson details saved for ${currentClass.name}.`
-      );
-    } catch (e) {
-      setError(readableError(e));
-    } finally {
-      setBusy(false);
-    }
+    }, "Lesson saved.");
   }
 
   function emailParent() {
-    if (!selected) return;
+    const subject = encodeURIComponent(
+      `LessonBilly - New progress update for ${student?.name}`
+    );
 
-    const subject =
-      `LessonBilly - New progress update for ${selected.name}`;
-
-    const body =
-      `Hello,\n\nA new assessment result for ${selected.name} is available in your LessonBilly parent portal.\n\nPlease sign in at ${window.location.origin} to view it.\n\nThank you,\nLessonBilly`;
+    const body = encodeURIComponent(
+      `Hello,\n\nA new assessment result is available in your LessonBilly parent portal at ${window.location.origin}.\n\nThank you,\nLessonBilly`
+    );
 
     window.location.href =
-      `mailto:${encodeURIComponent(
-        selected.parentEmail
-      )}` +
-      `?subject=${encodeURIComponent(
-        subject
-      )}` +
-      `&body=${encodeURIComponent(
-        body
-      )}`;
+      `mailto:${student.parentEmail}?subject=${subject}&body=${body}`;
   }
 
   return (
@@ -2662,8 +1934,8 @@ function TutorDashboard({ user }) {
           </h1>
 
           <p>
-            Manage your students, assessment
-            results, and tutoring links.
+            Manage students, classes, published
+            grades and shared learning resources.
           </p>
         </div>
 
@@ -2673,17 +1945,10 @@ function TutorDashboard({ user }) {
         </span>
       </div>
 
-      {error && (
-        <div className="alert">
-          {error}
-        </div>
-      )}
+      {error && <div className="alert">{error}</div>}
 
       {notice && (
-        <div
-          className="success-note"
-          role="status"
-        >
+        <div className="success-note">
           {notice}
         </div>
       )}
@@ -2694,32 +1959,19 @@ function TutorDashboard({ user }) {
         <div className="metric">
           <small>Students</small>
           <strong>{students.length}</strong>
-          <span>Connected learners</span>
         </div>
 
         <div className="metric">
-          <small>
-            Registered accounts
-          </small>
-
+          <small>Registered accounts</small>
           <strong>{profiles.length}</strong>
-          <span>
-            Including your account
-          </span>
         </div>
 
         <div className="metric">
-          <small>
-            Notifications
-          </small>
-
+          <small>Practice Center</small>
           <strong className="metric-subject">
-            Manual
+            Tutor-approved
           </strong>
-
-          <span>
-            No automatic grade emails
-          </span>
+          <span>Open the top tab to publish</span>
         </div>
       </div>
 
@@ -2732,7 +1984,7 @@ function TutorDashboard({ user }) {
             </h2>
           </div>
 
-          <p className="muted">
+          <p className="muted tiny">
             A parent must register and verify
             their email first.
           </p>
@@ -2743,11 +1995,9 @@ function TutorDashboard({ user }) {
           >
             <label>
               Student name
-
               <input
                 required
                 maxLength={80}
-                placeholder="e.g. Jordan Smith"
                 value={newStudent.name}
                 onChange={e =>
                   setNewStudent({
@@ -2760,75 +2010,59 @@ function TutorDashboard({ user }) {
 
             <label>
               Parent's registered email
-
               <input
                 required
                 type="email"
-                placeholder="parent@example.com"
                 value={newStudent.parentEmail}
                 onChange={e =>
                   setNewStudent({
                     ...newStudent,
-                    parentEmail:
-                      e.target.value
+                    parentEmail: e.target.value
                   })
                 }
               />
             </label>
 
             <label>
-              Student's registered email (optional)
-
+              Student account email (optional)
               <input
                 type="email"
-                placeholder="student@example.com"
-                value={studentEmail}
+                value={newStudent.studentEmail}
                 onChange={e =>
-                  setStudentEmail(
-                    e.target.value
-                  )
+                  setNewStudent({
+                    ...newStudent,
+                    studentEmail: e.target.value
+                  })
                 }
               />
-
-              <small className="muted">
-                Student accounts must register
-                and verify first.
-                You can link one later.
-              </small>
             </label>
 
             <div className="form-pair">
               <label>
                 Grade level
-
                 <input
                   required
                   maxLength={30}
-                  placeholder="e.g. Grade 8"
                   value={newStudent.gradeLevel}
                   onChange={e =>
                     setNewStudent({
                       ...newStudent,
-                      gradeLevel:
-                        e.target.value
+                      gradeLevel: e.target.value
                     })
                   }
                 />
               </label>
 
               <label>
-                First class / subject
-
+                First class
                 <input
                   required
                   maxLength={60}
-                  placeholder="e.g. Algebra"
                   value={newStudent.subject}
                   onChange={e =>
                     setNewStudent({
                       ...newStudent,
-                      subject:
-                        e.target.value
+                      subject: e.target.value
                     })
                   }
                 />
@@ -2853,37 +2087,30 @@ function TutorDashboard({ user }) {
             </h2>
           </div>
 
-          {!students.length ? (
-            <div className="empty-small">
-              No students yet. Add your first
-              student using the form.
-            </div>
-          ) : (
+          {students.length ? (
             <div className="student-list">
               {students.map(s => (
                 <button
-                  key={s.id}
                   className={
-                    selectedId === s.id
+                    s.id === studentId
                       ? "student-row active"
                       : "student-row"
                   }
+                  key={s.id}
                   onClick={() => {
-                    setSelectedId(s.id);
-                    setSelectedClassId("");
+                    setStudentId(s.id);
+                    setClassId("");
                   }}
                 >
                   <span className="student-avatar">
-                    {s.name
-                      .charAt(0)
-                      .toUpperCase()}
+                    {s.name?.charAt(0) || "?"}
                   </span>
 
                   <span>
                     <b>{s.name}</b>
+
                     <small>
-                      {s.subject} ·{" "}
-                      {s.gradeLevel}
+                      {s.subject} · {s.gradeLevel}
                     </small>
                   </span>
 
@@ -2891,29 +2118,24 @@ function TutorDashboard({ user }) {
                 </button>
               ))}
             </div>
+          ) : (
+            <div className="empty-small">
+              No students added yet.
+            </div>
           )}
         </section>
       </div>
 
-      {selected && (
+      {student && (
         <>
           <div className="section-divider">
-            <h2>
-              Manage {selected.name}
-            </h2>
-
-            <span>
-              {selected.gradeLevel ||
-                "Grade not set"}{" "}
-              · {selected.parentEmail}
-            </span>
+            <h2>Manage {student.name}</h2>
+            <span>{student.parentEmail}</span>
           </div>
 
           <section
             className="panel"
-            style={{
-              marginTop: 22
-            }}
+            style={{ marginTop: 22 }}
           >
             <div className="panel-heading">
               <h2>
@@ -2922,73 +2144,43 @@ function TutorDashboard({ user }) {
               </h2>
             </div>
 
-            <p className="muted">
-              Update the student's grade level
-              when they advance, and add as many
-              subjects as needed.
-              Each class has separate assessments,
-              a lesson link, and homework and
-              classwork PDFs.
-            </p>
-
             <form
               className="stack-form"
               onSubmit={saveGradeLevel}
             >
               <label>
                 Student grade level
-
                 <input
-                  required
                   maxLength={30}
-                  placeholder="e.g. Grade 9"
-                  value={gradeLevelEdit}
+                  value={gradeLevel}
                   onChange={e =>
-                    setGradeLevelEdit(
-                      e.target.value
-                    )
+                    setGradeLevel(e.target.value)
                   }
                 />
               </label>
 
               <button
                 className="button"
-                type="submit"
                 disabled={busy}
               >
                 Save grade level
               </button>
             </form>
 
-            <div
-              className="panel-heading"
-              style={{
-                marginTop: 28
-              }}
-            >
-              <h2>
-                Classes for {selected.name}
-              </h2>
-            </div>
+            <h2 style={{ marginTop: 30 }}>
+              Classes for {student.name}
+            </h2>
 
-            <div
-              className="student-tabs"
-              style={{
-                marginBottom: 10
-              }}
-            >
+            <div className="student-tabs">
               {classes.map(c => (
                 <button
-                  type="button"
-                  key={c.id}
                   className={
                     c.id === currentClass?.id
                       ? "selected"
                       : ""
                   }
-                  onClick={() =>
-                    setSelectedClassId(c.id)
-                  }
+                  key={c.id}
+                  onClick={() => setClassId(c.id)}
                 >
                   {c.name}
                 </button>
@@ -2996,36 +2188,25 @@ function TutorDashboard({ user }) {
             </div>
 
             <p className="muted tiny">
-              Selected class:{" "}
-              <strong>
-                {currentClass?.name}
-              </strong>.
-              Assessments, lessons, and PDFs
-              below belong to the selected class.
+              The selected class controls the
+              assessments, meeting link, Drive
+              PDFs, and Practice Center activities.
             </p>
 
-            <div
-              className="dashboard-grid"
-              style={{
-                marginBottom: 0
-              }}
-            >
+            <div className="dashboard-grid">
               <form
                 className="stack-form"
                 onSubmit={addClass}
               >
                 <label>
                   Add another class
-
                   <input
                     required
                     maxLength={60}
                     placeholder="e.g. English"
-                    value={newClassName}
+                    value={newClass}
                     onChange={e =>
-                      setNewClassName(
-                        e.target.value
-                      )
+                      setNewClass(e.target.value)
                     }
                   />
                 </label>
@@ -3033,7 +2214,6 @@ function TutorDashboard({ user }) {
                 <button
                   className="button"
                   disabled={busy}
-                  type="submit"
                 >
                   <Plus size={17} />
                   Add class
@@ -3046,15 +2226,12 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Rename selected class
-
                   <input
                     required
                     maxLength={60}
-                    value={classNameEdit}
+                    value={rename}
                     onChange={e =>
-                      setClassNameEdit(
-                        e.target.value
-                      )
+                      setRename(e.target.value)
                     }
                   />
                 </label>
@@ -3062,7 +2239,6 @@ function TutorDashboard({ user }) {
                 <button
                   className="button"
                   disabled={busy}
-                  type="submit"
                 >
                   Rename class
                 </button>
@@ -3072,9 +2248,7 @@ function TutorDashboard({ user }) {
 
           <section
             className="panel"
-            style={{
-              marginTop: 22
-            }}
+            style={{ marginTop: 22 }}
           >
             <div className="panel-heading">
               <h2>
@@ -3083,33 +2257,25 @@ function TutorDashboard({ user }) {
               </h2>
             </div>
 
-            <p className="muted">
-              Link this student record to a separate
-              student login. Parents keep their
-              own login.
-            </p>
-
             <form
               className="stack-form"
-              onSubmit={linkStudentAccount}
+              onSubmit={linkStudent}
             >
               <label>
-                Student account email
-
+                Student's registered email
                 <input
                   type="email"
-                  placeholder="student@example.com"
                   value={linkEmail}
                   onChange={e =>
                     setLinkEmail(e.target.value)
                   }
+                  placeholder="student@example.com"
                 />
               </label>
 
               <button
                 className="button"
                 disabled={busy}
-                type="submit"
               >
                 Save student access
               </button>
@@ -3121,16 +2287,9 @@ function TutorDashboard({ user }) {
               <div className="panel-heading">
                 <h2>
                   <PencilLine size={19} />
-                  Add an assessment
+                  Add {currentClass?.name} assessment
                 </h2>
               </div>
-
-              <p className="muted tiny">
-                Class:{" "}
-                <strong>
-                  {currentClass?.name}
-                </strong>
-              </p>
 
               <form
                 className="stack-form"
@@ -3138,17 +2297,14 @@ function TutorDashboard({ user }) {
               >
                 <label>
                   Assessment title
-
                   <input
                     required
                     maxLength={100}
-                    placeholder="e.g. Fractions quiz"
                     value={newGrade.title}
                     onChange={e =>
                       setNewGrade({
                         ...newGrade,
-                        title:
-                          e.target.value
+                        title: e.target.value
                       })
                     }
                   />
@@ -3157,7 +2313,6 @@ function TutorDashboard({ user }) {
                 <div className="form-pair">
                   <label>
                     Points earned
-
                     <input
                       required
                       type="number"
@@ -3167,8 +2322,7 @@ function TutorDashboard({ user }) {
                       onChange={e =>
                         setNewGrade({
                           ...newGrade,
-                          earned:
-                            e.target.value
+                          earned: e.target.value
                         })
                       }
                     />
@@ -3176,7 +2330,6 @@ function TutorDashboard({ user }) {
 
                   <label>
                     Points possible
-
                     <input
                       required
                       type="number"
@@ -3186,8 +2339,7 @@ function TutorDashboard({ user }) {
                       onChange={e =>
                         setNewGrade({
                           ...newGrade,
-                          possible:
-                            e.target.value
+                          possible: e.target.value
                         })
                       }
                     />
@@ -3196,17 +2348,14 @@ function TutorDashboard({ user }) {
 
                 <label>
                   Optional feedback
-
                   <textarea
                     rows="3"
                     maxLength={700}
-                    placeholder="What went well? What should we practice?"
                     value={newGrade.feedback}
                     onChange={e =>
                       setNewGrade({
                         ...newGrade,
-                        feedback:
-                          e.target.value
+                        feedback: e.target.value
                       })
                     }
                   />
@@ -3224,10 +2373,7 @@ function TutorDashboard({ user }) {
 
             <section className="panel">
               <div className="panel-heading">
-                <h2>
-                  {currentClass?.name}{" "}
-                  assessment history
-                </h2>
+                <h2>Assessment history</h2>
 
                 <button
                   className="subtle-button"
@@ -3239,17 +2385,14 @@ function TutorDashboard({ user }) {
               </div>
 
               <GradeList
-                grades={sortedGrades}
-                tutor
+                grades={sorted}
                 onPublish={publishGrade}
               />
 
               <p className="muted tiny">
-                Only published scores for the
-                selected class appear in student
-                and parent accounts.
-                Email Parent opens your email
-                app; it does not send automatically.
+                Published grades are visible to
+                the linked family. Emails must
+                be sent manually.
               </p>
             </section>
           </div>
@@ -3257,9 +2400,7 @@ function TutorDashboard({ user }) {
           <section className="panel session-panel">
             <div className="panel-heading">
               <h2>
-                Upcoming{" "}
-                {currentClass?.name}{" "}
-                lesson
+                Upcoming {currentClass?.name} lesson
               </h2>
             </div>
 
@@ -3269,32 +2410,28 @@ function TutorDashboard({ user }) {
             >
               <label>
                 Google Meet link
-
                 <input
                   type="url"
-                  placeholder="https://meet.google.com/abc-defg-hij"
                   value={session.meetingUrl}
                   onChange={e =>
                     setSession({
                       ...session,
-                      meetingUrl:
-                        e.target.value
+                      meetingUrl: e.target.value
                     })
                   }
+                  placeholder="https://meet.google.com/abc-defg-hij"
                 />
               </label>
 
               <label>
-                Lesson date and time
-
+                Lesson date/time
                 <input
                   type="datetime-local"
                   value={session.lessonAt}
                   onChange={e =>
                     setSession({
                       ...session,
-                      lessonAt:
-                        e.target.value
+                      lessonAt: e.target.value
                     })
                   }
                 />
@@ -3302,38 +2439,22 @@ function TutorDashboard({ user }) {
 
               <label>
                 Lesson duration
-
                 <select
                   value={session.durationMinutes}
                   onChange={e =>
                     setSession({
                       ...session,
-                      durationMinutes:
-                        Number(
-                          e.target.value
-                        )
+                      durationMinutes: Number(
+                        e.target.value
+                      )
                     })
                   }
                 >
-                  <option value="60">
-                    1 hour
-                  </option>
-
-                  <option value="90">
-                    1 hour 30 minutes
-                  </option>
-
-                  <option value="120">
-                    2 hours
-                  </option>
-
-                  <option value="150">
-                    2 hours 30 minutes
-                  </option>
-
-                  <option value="180">
-                    3 hours
-                  </option>
+                  {[60, 90, 120, 150, 180].map(n => (
+                    <option value={n} key={n}>
+                      {duration(n)}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -3346,16 +2467,16 @@ function TutorDashboard({ user }) {
             </form>
 
             <p className="muted tiny">
-              The meeting is hosted in Google Meet.
-              LessonBilly shows the planned duration
-              but does not limit the meeting length.
+              Google Meet hosts the video call;
+              LessonBilly does not control meeting
+              length.
             </p>
           </section>
 
           {currentClass && (
             <DriveMaterials
-              key={`${selected.id}:${currentClass.id}`}
-              studentId={selected.id}
+              key={`${studentId}:${currentClass.id}`}
+              studentId={studentId}
               currentClass={currentClass}
               canEdit
             />
@@ -3366,7 +2487,7 @@ function TutorDashboard({ user }) {
   );
 }
 
-function PrivacyScreen() {
+function Privacy() {
   return (
     <main className="section">
       <div className="shell privacy-page">
@@ -3374,38 +2495,33 @@ function PrivacyScreen() {
           LESSONBILLY
         </span>
 
-        <h1>
-          Privacy information
-        </h1>
+        <h1>Privacy information</h1>
 
         <p>
-          LessonBilly collects parent account details,
-          student names, subjects, grades, lesson
-          information, and Google Drive file links
-          to provide tutoring and a private progress
-          portal. Firebase processes account and
-          grade information, Google Drive hosts
-          class PDFs, and Google Meet handles
-          live lessons.
+          LessonBilly uses Firebase Authentication
+          and Firestore for accounts, grades,
+          class information, Google Drive links,
+          and tutor-approved practice activities.
+          Google Drive hosts shared PDFs;
+          Google Meet hosts live lessons.
         </p>
 
         <p>
-          Parents can request corrections or deletion
-          of their family's records by contacting
-          LessonBilly. Published PDF links are shown
-          only to linked families, but Google Drive
-          sharing permissions separately control
-          who can open the underlying files.
-          Results are not emailed automatically.
+          Student practice selections and scores
+          are not saved in Firestore. Unpublished
+          notes and PDF text for local AI generation
+          stay in the current browser session.
+          Google Drive permissions separately
+          control who can open a shared PDF.
         </p>
 
         <p>
-          Before providing the service to children,
-          review applicable child-privacy laws and
-          obtain appropriate parental consent.
-          This starter privacy statement should be
-          completed for your actual business
-          practices before enrolling real students.
+          Parents can request correction or deletion
+          of family records by contacting LessonBilly.
+          This statement needs review and completion
+          for actual business practices, including
+          consent rules for children, before real
+          student enrollment.
         </p>
 
         <a
@@ -3420,79 +2536,42 @@ function PrivacyScreen() {
   );
 }
 
-function Footer({ setPage }) {
+function Footer({ go }) {
   return (
     <footer className="footer">
       <div className="shell footer-layout">
         <div>
-          <Brand
-            onClick={() => {
-              setPage("home");
-              window.scrollTo(0, 0);
-            }}
-          />
+          <Brand go={go} />
 
           <p>
-            Personalized tutoring.
-            Meaningful progress.
+            Personalized tutoring. Meaningful progress.
           </p>
         </div>
 
         <div>
           <span>Explore</span>
 
-          <a
-            href="/#subjects"
-            onClick={() =>
-              setPage("home")
-            }
-          >
-            Subjects
-          </a>
+          <button onClick={() => go("home")}>
+            Home
+          </button>
 
-          <a
-            href="/#pricing"
-            onClick={() =>
-              setPage("home")
-            }
-          >
-            Pricing
-          </a>
-
-          <a
-            href="/#about"
-            onClick={() =>
-              setPage("home")
-            }
-          >
-            About
-          </a>
+          <button onClick={() => go("practice")}>
+            Practice Center
+          </button>
         </div>
 
         <div>
           <span>Connect</span>
 
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
-          >
+          <a href={`mailto:${CONTACT_EMAIL}`}>
             Email LessonBilly
           </a>
 
-          <button
-            onClick={() => {
-              setPage("auth");
-              window.scrollTo(0, 0);
-            }}
-          >
+          <button onClick={() => go("auth")}>
             Portal login
           </button>
 
-          <button
-            onClick={() => {
-              setPage("privacy");
-              window.scrollTo(0, 0);
-            }}
-          >
+          <button onClick={() => go("privacy")}>
             Privacy
           </button>
         </div>
@@ -3511,168 +2590,137 @@ function Footer({ setPage }) {
 }
 
 export default function App() {
-  const [user, setUser] =
-    useState(null);
-
-  const [verified, setVerified] =
-    useState(false);
-
-  const [
-    accountRole,
-    setAccountRole
-  ] = useState("parent");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [page, setPage] =
-    useState("home");
-
-  const [
-    startupError,
-    setStartupError
-  ] = useState("");
+  const [user, setUser] = useState(null);
+  const [verified, setVerified] = useState(false);
+  const [role, setRole] = useState("parent");
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState("home");
+  const [error, setError] = useState("");
 
   useEffect(
     () =>
-      onAuthStateChanged(
-        auth,
-        async next => {
-          setUser(next);
-          setStartupError("");
+      onAuthStateChanged(auth, async next => {
+        setUser(next);
+        setError("");
 
-          if (next) {
-            try {
-              await reload(next);
-              await next.getIdToken(true);
+        if (!next) {
+          setVerified(false);
+          setRole("parent");
+          setLoading(false);
+          return;
+        }
 
-              setVerified(
-                next.emailVerified
-              );
+        try {
+          await reload(next);
+          await next.getIdToken(true);
 
-              if (next.emailVerified) {
-                const role =
-                  await ensureProfile(next);
+          setVerified(next.emailVerified);
 
-                setAccountRole(
-                  role === "student"
-                    ? "student"
-                    : "parent"
-                );
-              }
-            } catch (e) {
-              setStartupError(
-                readableError(e)
-              );
-            }
-          } else {
-            setVerified(false);
-            setAccountRole("parent");
+          if (next.emailVerified) {
+            setRole(
+              (await ensureProfile(next)) === "student"
+                ? "student"
+                : "parent"
+            );
           }
-
+        } catch (e) {
+          setError(errText(e));
+        } finally {
           setLoading(false);
         }
-      ),
+      }),
     []
   );
 
-  const tutor =
-    user?.uid === TUTOR_UID &&
-    TUTOR_UID !==
-      "PASTE_TUTOR_UID_HERE";
-
-  async function logout() {
-    await signOut(auth);
-    setPage("home");
-    window.scrollTo(0, 0);
-  }
+  const isTutor = Boolean(
+    user?.uid &&
+    TUTOR_UID &&
+    user.uid === TUTOR_UID &&
+    TUTOR_UID !== "PASTE_TUTOR_UID_HERE"
+  );
 
   function go(next) {
     setPage(next);
     window.scrollTo(0, 0);
   }
 
+  async function logout() {
+    await signOut(auth);
+    go("home");
+  }
+
+  async function verifiedDone() {
+    setVerified(true);
+
+    const snap = await getDoc(
+      doc(db, "profiles", user.uid)
+    );
+
+    setRole(
+      snap.data()?.role === "student"
+        ? "student"
+        : "parent"
+    );
+
+    go("dashboard");
+  }
+
   return (
     <>
       <Header
-        setPage={go}
         user={user}
-        onLogout={logout}
+        go={go}
+        logout={logout}
       />
 
       {loading ? (
         <main className="loading-screen">
           <div className="loader" />
-          <p>
-            Loading LessonBilly...
-          </p>
+          <p>Loading LessonBilly...</p>
         </main>
       ) : page === "home" ? (
-        <Home setPage={go} />
+        <Home user={user} go={go} />
       ) : page === "privacy" ? (
-        <PrivacyScreen />
+        <Privacy />
       ) : user && !verified ? (
-        <VerificationScreen
+        <Verification
           user={user}
-          onVerified={() => {
-            setVerified(true);
-
-            getDoc(
-              doc(
-                db,
-                "profiles",
-                user.uid
-              )
-            )
-              .then(profile => {
-                setAccountRole(
-                  profile.data()?.role ===
-                    "student"
-                    ? "student"
-                    : "parent"
-                );
-
-                go("dashboard");
-              })
-              .catch(() =>
-                go("dashboard")
-              );
-          }}
+          done={verifiedDone}
         />
       ) : page === "auth" && !user ? (
         <AuthScreen
-          onSuccess={() =>
-            go("dashboard")
-          }
+          onSuccess={() => go("dashboard")}
+        />
+      ) : page === "practice" && user ? (
+        <PracticeCenter
+          user={user}
+          isTutor={isTutor}
+          role={role}
         />
       ) : user ? (
         <main className="dashboard-page shell">
-          {startupError && (
+          {error && (
             <div className="alert">
-              {startupError}
+              {error}
             </div>
           )}
 
-          {tutor ? (
-            <TutorDashboard
-              user={user}
-            />
+          {isTutor ? (
+            <TutorDashboard user={user} />
           ) : (
             <LearnerDashboard
               user={user}
-              role={accountRole}
+              role={role}
             />
           )}
         </main>
       ) : (
         <AuthScreen
-          onSuccess={() =>
-            go("dashboard")
-          }
+          onSuccess={() => go("dashboard")}
         />
       )}
 
-      <Footer setPage={go} />
+      <Footer go={go} />
     </>
   );
 }

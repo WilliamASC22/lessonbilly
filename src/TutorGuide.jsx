@@ -14,59 +14,110 @@ export default function TutorGuide() {
   const messages = [
     {
       id: "parent",
-      title: "Parent welcome message",
+      title: "Parent welcome email",
       body: `Subject: Welcome to LessonBilly
 
 Hello,
 
-Please visit ${site}, choose Portal Login, then Create Parent Account on the right.
+Go to ${site} and choose Portal Login, then Create Parent Account on the right. Verify your email and sign in.
 
-Register with the email address you provided to me and verify your email.
-
-I will connect your account to your student's record. You can then view their classes, published grades, tutoring links, and shared PDFs.
+I will link your account to your learner's record. You'll be able to see published grades, lessons, shared PDFs, and tutor-approved practice questions.
 
 Thank you,
 LessonBilly`
     },
     {
       id: "student",
-      title: "Student welcome message",
-      body: `Subject: Your LessonBilly learning portal
+      title: "Student welcome email",
+      body: `Subject: LessonBilly student portal
 
 Hello,
 
-With your parent or guardian, visit ${site}, select Portal Login, then Create Student Account on the left.
+With a parent or guardian, visit ${site}, select Portal Login and Create Student Account on the left, verify your email, and sign in. I'll link the account to your class.
 
-Verify your email and sign back in.
+You can then view published grades, assignments, class meetings, and Practice Center exercises.
 
-I will link your account to your student record so you can see your classes, published scores, tutoring links, and homework materials.
-
-For children under 13, student registration should not be used until the required parental notice and consent process is completed.
+Important: For children under 13, registration requires an appropriate parental notice and consent process first.
 
 Thank you,
 LessonBilly`
     },
     {
-      id: "grade",
-      title: "New grade message",
-      body: `Subject: LessonBilly - New grade available
+      id: "practice",
+      title: "New practice activity notification",
+      body: `Subject: New LessonBilly practice activities
 
 Hello,
 
-A new assessment has been published in LessonBilly.
-
-Please sign in at ${site}, select the student's class, and open Grade history to view the score and feedback.
+I published new flashcards and quiz questions in LessonBilly. Visit ${site}, sign in, and open Practice Center. Select your class and try the activities. Practice answers are not recorded or graded.
 
 Thank you,
 LessonBilly`
     }
   ];
 
-  async function copyMessage(item) {
+  const steps = [
+    {
+      title: "1. Enroll and connect a family",
+      instructions: [
+        "Ask the parent to create and verify a Parent Account.",
+        "Add the student in Dashboard with their grade level, class, and registered parent email.",
+        "Optionally connect an approved student account using Student account access.",
+        "Test both accounts with fictional data before real use."
+      ]
+    },
+    {
+      title: "2. Manage classes and grades",
+      instructions: [
+        "Select a student, update grade level, and add or rename classes as needed.",
+        "Choose a class before entering grades or a meeting link.",
+        "Save an assessment as Draft, verify its score, then Publish to the family.",
+        "To permanently remove a class, use Delete class below its Google Drive links. The confirmation requires typing its name; deleting its last class is blocked."
+      ]
+    },
+    {
+      title: "3. Share Google Drive PDFs",
+      instructions: [
+        "Upload homework and classwork PDFs in your Google Drive account.",
+        "Share each file with the correct parent/student Google accounts as Viewer using Restricted access.",
+        "Copy the file link into the correct class in LessonBilly.",
+        "Replacing or removing a link from LessonBilly does not delete or unshare the file in Google Drive. Clean up Drive manually."
+      ]
+    },
+    {
+      title: "4. Create tutor-approved practice",
+      instructions: [
+        "Open Practice Center from the top navigation, and choose the student and class.",
+        "Paste lesson notes or upload a text-based PDF from your device. Scanned pages cannot be read automatically.",
+        "Click Generate draft activities locally, or start with blank templates if WebGPU/AI isn't available.",
+        "Review and edit all 10 flashcards, 10 quiz questions, and answer keys. The AI is fallible.",
+        "Click Publish once satisfied. Approved activities remain available; unpublished drafts disappear when you reload.",
+        "Student quiz attempts, flashcard progress and scores are not stored. A refresh resets them."
+      ]
+    },
+    {
+      title: "5. Schedule lessons",
+      instructions: [
+        "Select the student and class.",
+        "Create a Google Meet link and enter it with the lesson date and duration.",
+        "Save lesson, then tell the family to use the Join Google Meet button in their dashboard."
+      ]
+    },
+    {
+      title: "6. Troubleshoot",
+      instructions: [
+        "Missing student profile: check registration, email verification, and the Firestore profile role.",
+        "Permission denied: make sure tutor UID in firebase.js and published Firestore rules match.",
+        "PDF link denied: verify Google Drive sharing with the exact invited Google account.",
+        "Practice Center missing: confirm the new practice security rule was published and that the tutor published the activity set.",
+        "AI not loading: use a current WebGPU-compatible device or build exercises with blank drafts."
+      ]
+    }
+  ];
+
+  async function copy(item) {
     try {
-      await navigator.clipboard.writeText(
-        item.body
-      );
+      await navigator.clipboard.writeText(item.body);
       setCopied(item.id);
     } catch {
       setCopied("error");
@@ -74,430 +125,139 @@ LessonBilly`
   }
 
   return (
-    <section className="panel lb-guide">
+    <section
+      className="panel lb-guide"
+      style={{ marginBottom: 25 }}
+    >
+      <div className="panel-heading">
+        <h2>
+          <BookOpenCheck size={20} />
+          Tutor Guide - How to use LessonBilly
+        </h2>
+      </div>
+
+      <p className="muted tiny">
+        Expand any section for step-by-step
+        instructions and family messages.
+      </p>
+
+      {steps.map(step => (
+        <details key={step.title}>
+          <summary>{step.title}</summary>
+
+          <ol>
+            {step.instructions.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ol>
+        </details>
+      ))}
+
+      <details>
+        <summary>
+          7. Copy emails to parents and students
+        </summary>
+
+        {messages.map(item => (
+          <div
+            className="lb-message"
+            key={item.id}
+          >
+            <div className="lb-message-top">
+              <strong>{item.title}</strong>
+
+              <button
+                className="subtle-button"
+                onClick={() => copy(item)}
+              >
+                <Copy size={15} />
+
+                {copied === item.id
+                  ? "Copied"
+                  : "Copy message"}
+              </button>
+            </div>
+
+            <pre>{item.body}</pre>
+          </div>
+        ))}
+
+        {copied === "error" && (
+          <p className="muted">
+            Clipboard unavailable; select and
+            copy the text instead.
+          </p>
+        )}
+      </details>
+
+      <p
+        className="muted tiny"
+        style={{ marginTop: 15 }}
+      >
+        <ShieldCheck
+          size={15}
+          style={{ verticalAlign: "middle" }}
+        />
+        Protect real student records and complete
+        applicable parental consent requirements
+        before use.
+      </p>
+
       <style>{`
-        .lb-guide {
-          margin-bottom: 26px;
-        }
-
-        .lb-guide h2 {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 20px;
-          margin: 0 0 10px;
-        }
-
         .lb-guide details {
-          border: 1px solid #e2e9f7;
-          border-radius: 12px;
-          margin-top: 11px;
+          border: 1px solid #e2eaf8;
+          border-radius: 11px;
           overflow: hidden;
+          margin-top: 10px;
         }
 
         .lb-guide summary {
           cursor: pointer;
+          background: #f6f8ff;
           padding: 15px 17px;
-          background: #f5f8ff;
+          font-size: 13px;
           font-weight: 800;
-          color: #24385f;
-          font-size: 14px;
-        }
-
-        .lb-guide .lb-guide-body {
-          padding: 17px 19px;
+          color: #294067;
         }
 
         .lb-guide ol {
+          padding: 12px 24px 13px 42px;
           margin: 0;
-          padding-left: 22px;
         }
 
         .lb-guide li {
-          margin-bottom: 9px;
-          color: #536480;
-          font-size: 14px;
+          color: #586a85;
           line-height: 1.65;
-        }
-
-        .lb-guide .lb-guide-note {
-          background: #fff7e8;
-          border-radius: 9px;
-          padding: 12px;
-          margin: 14px 0 0;
           font-size: 13px;
-          color: #76551d;
+          margin: 8px 0;
         }
 
-        .lb-guide .lb-copy {
-          border: 1px solid #9db4f2;
-          border-radius: 9px;
-          background: #eef3ff;
-          color: #345bc7;
-          padding: 9px 12px;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          font-weight: 800;
+        .lb-message {
+          padding: 14px 18px;
+          border-top: 1px solid #edf1f8;
         }
 
-        .lb-guide .lb-message {
-          padding: 14px 0;
-          border-bottom: 1px solid #e9edf5;
-        }
-
-        .lb-guide .lb-message-head {
+        .lb-message-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 12px;
+          gap: 9px;
           flex-wrap: wrap;
         }
 
-        .lb-guide pre {
-          background: #f6f8fc;
+        .lb-message pre {
+          padding: 12px;
+          background: #f7f9fc;
           border-radius: 9px;
-          padding: 13px;
+          font-size: 12px;
           white-space: pre-wrap;
           overflow-wrap: anywhere;
-          font-family: inherit;
           line-height: 1.6;
-          font-size: 12px;
-          max-height: 220px;
+          max-height: 200px;
           overflow: auto;
-          margin: 12px 0 0;
+          font-family: inherit;
         }
       `}</style>
-
-      <h2>
-        <BookOpenCheck
-          size={23}
-          color="#466cde"
-        />
-        Tutor Guide - How to use LessonBilly
-      </h2>
-
-      <p className="muted">
-        Expand a section for instructions.
-        This guide is available in the tutor dashboard.
-      </p>
-
-      <details>
-        <summary>
-          1. Enroll a student and connect accounts
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Ask the parent to register and verify
-              their email.
-            </li>
-            <li>
-              Add the student's name, registered parent
-              email, grade level, and first subject.
-            </li>
-            <li>
-              Optionally link an approved student
-              account in Student account access.
-            </li>
-            <li>
-              Have the family test their accounts.
-            </li>
-          </ol>
-
-          <p className="lb-guide-note">
-            <ShieldCheck size={15} />
-            For children under 13, complete the
-            necessary parental notice and consent
-            process before independent registration.
-          </p>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          2. Update a student's grade level
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>Select the student.</li>
-            <li>
-              Open Student details and classes.
-            </li>
-            <li>
-              Change the grade level.
-            </li>
-            <li>
-              Click Save grade level.
-            </li>
-          </ol>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          3. Add, rename, or delete classes
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Select a student under Your students.
-            </li>
-            <li>
-              Enter a subject in Add another class,
-              then click Add class.
-            </li>
-            <li>
-              Choose a class using its class button.
-            </li>
-            <li>
-              To rename it, use Rename selected class.
-            </li>
-            <li>
-              To delete it, scroll down to Homework
-              and classwork PDFs. Find Remove student
-              from this class.
-            </li>
-            <li>
-              Click Delete class and its grades.
-            </li>
-            <li>
-              Confirm the warning. Then type DELETE
-              followed by the exact class name.
-            </li>
-            <li>
-              The class and its assessments will be
-              permanently deleted from Firestore.
-              At least one class must remain.
-            </li>
-            <li>
-              Delete or unshare old PDFs separately
-              in Google Drive.
-            </li>
-          </ol>
-
-          <p className="lb-guide-note">
-            Deleting a class is permanent.
-            The student's other classes and
-            LessonBilly account remain intact.
-          </p>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          4. Save and publish assessments
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Select the student and correct class.
-            </li>
-            <li>
-              Enter assessment title, points,
-              and optional feedback.
-            </li>
-            <li>
-              Click Save draft grade.
-            </li>
-            <li>
-              Click Publish when the grade is ready.
-            </li>
-            <li>
-              Notify the parent manually.
-            </li>
-          </ol>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          5. Schedule tutoring lessons
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Select the student and class.
-            </li>
-            <li>
-              Create a Google Meet link.
-            </li>
-            <li>
-              Enter the meeting link, date, time,
-              and duration.
-            </li>
-            <li>
-              Click Save lesson.
-            </li>
-          </ol>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          6. Share homework and classwork PDFs
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Upload the PDF to Google Drive.
-            </li>
-            <li>
-              Set sharing to Restricted.
-            </li>
-            <li>
-              Add the family Google accounts
-              as Viewers.
-            </li>
-            <li>
-              Copy the Google Drive file link.
-            </li>
-            <li>
-              In LessonBilly, select the student
-              and class.
-            </li>
-            <li>
-              Paste the link into Homework PDF
-              or Classwork PDF.
-            </li>
-            <li>
-              Click Save link.
-            </li>
-            <li>
-              To replace materials, save a new link.
-              Delete or unshare the old Google Drive
-              file separately.
-            </li>
-          </ol>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          7. Optional on-device AI study helper
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              Select a student and class.
-            </li>
-            <li>
-              Scroll to On-device AI study helper.
-            </li>
-            <li>
-              Click Start local AI.
-            </li>
-            <li>
-              Allow the model to download to
-              the browser.
-            </li>
-            <li>
-              Ask short practice questions.
-            </li>
-            <li>
-              Use Clear chat to clear the visible
-              conversation.
-            </li>
-          </ol>
-
-          <p className="lb-guide-note">
-            The AI runs locally, so it does not use
-            Cloudflare's daily AI quota. However,
-            it requires a compatible device and
-            may give incorrect answers. It cannot
-            read PDFs or grade student work.
-            Do not enter personal information.
-          </p>
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          8. Copy messages for parents and students
-        </summary>
-
-        <div className="lb-guide-body">
-          {messages.map(item => (
-            <div
-              className="lb-message"
-              key={item.id}
-            >
-              <div className="lb-guide-message-head">
-                <strong>
-                  {item.title}
-                </strong>
-
-                <button
-                  className="lb-copy"
-                  type="button"
-                  onClick={() =>
-                    copyMessage(item)
-                  }
-                >
-                  {copied === item.id ? (
-                    <CheckCircle2 size={16} />
-                  ) : (
-                    <Copy size={16} />
-                  )}
-
-                  {copied === item.id
-                    ? "Copied"
-                    : "Copy message"}
-                </button>
-              </div>
-
-              <pre>{item.body}</pre>
-            </div>
-          ))}
-
-          {copied === "error" && (
-            <p className="muted">
-              Clipboard unavailable.
-              Copy the message manually.
-            </p>
-          )}
-        </div>
-      </details>
-
-      <details>
-        <summary>
-          9. Troubleshooting
-        </summary>
-
-        <div className="lb-guide-body">
-          <ol>
-            <li>
-              If a student account is missing,
-              check their registration and
-              Firestore profile.
-            </li>
-            <li>
-              If grades are missing, confirm
-              the correct class and Publish status.
-            </li>
-            <li>
-              If a PDF cannot open, check Google
-              Drive Viewer permissions.
-            </li>
-            <li>
-              If Firestore denies access, verify
-              the published rules and tutor UID.
-            </li>
-            <li>
-              If AI does not load, check WebGPU
-              support and available device memory.
-              Local AI is optional.
-            </li>
-          </ol>
-        </div>
-      </details>
     </section>
   );
 }

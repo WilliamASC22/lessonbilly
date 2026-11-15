@@ -5,14 +5,10 @@ import {
   doc,
   getDoc,
   getDocs,
-  runTransaction,
   writeBatch
 } from "firebase/firestore";
 import { Trash2 } from "lucide-react";
 import { db } from "./firebase";
-
-// Only the tutor dashboard displays this component.
-// Firestore security rules must also restrict writes to the tutor.
 
 export default function ClassDelete({
   studentId,
@@ -21,7 +17,7 @@ export default function ClassDelete({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function deleteClass() {
+  async function remove() {
     if (
       busy ||
       !studentId ||
@@ -30,31 +26,23 @@ export default function ClassDelete({
       return;
     }
 
-    const classId = currentClass.id;
-    const className = currentClass.name;
+    const name = currentClass.name;
 
-    // First confirmation.
-    const confirmed = window.confirm(
-      `Permanently remove this student from "${className}"?\n\n` +
-      `This deletes the class from LessonBilly AND deletes ` +
-      `all its draft and published grades.\n\n` +
-      `This cannot be undone.\n\n` +
-      `The student's account and other classes will remain.\n` +
-      `Google Drive files must be deleted or unshared separately.`
-    );
+    if (
+      !window.confirm(
+        `Delete the entire '${name}' class and all its assessments from LessonBilly? This cannot be undone. Google Drive files remain separately.`
+      )
+    ) {
+      return;
+    }
 
-    if (!confirmed) return;
-
-    // Second confirmation.
-    const typed = window.prompt(
-      `To confirm permanent deletion, type exactly:\n\nDELETE ${className}`
-    );
-
-    if (typed === null) return;
-
-    if (typed !== `DELETE ${className}`) {
+    if (
+      window.prompt(
+        `Type DELETE ${name} to confirm:`
+      ) !== `DELETE ${name}`
+    ) {
       setError(
-        "Deletion canceled. The confirmation text did not match."
+        "Deletion canceled - confirmation did not match."
       );
       return;
     }
@@ -69,53 +57,44 @@ export default function ClassDelete({
         studentId
       );
 
-      const studentSnapshot = await getDoc(
-        studentRef
-      );
+      const snap = await getDoc(studentRef);
 
-      if (!studentSnapshot.exists()) {
-        throw new Error(
-          "Student record not found."
-        );
+      if (!snap.exists()) {
+        throw new Error("Student not found.");
       }
 
-      const student = studentSnapshot.data();
+      const data = snap.data();
 
-      const classes = Array.isArray(
-        student.classes
-      )
-        ? student.classes
-        : [
-            {
-              id: "original",
-              name:
-                student.subject ||
-                "General tutoring"
-            }
-          ];
+      const classes =
+        Array.isArray(data.classes) &&
+        data.classes.length
+          ? data.classes
+          : [
+              {
+                id: "original",
+                name:
+                  data.subject ||
+                  "General tutoring"
+              }
+            ];
+
+      if (classes.length <= 1) {
+        throw new Error(
+          "A student must keep one class. Add a replacement class first."
+        );
+      }
 
       if (
         !classes.some(
-          c => c.id === classId
+          c => c.id === currentClass.id
         )
       ) {
         throw new Error(
-          "This class was already removed. Refresh the dashboard."
+          "Class has already been removed."
         );
       }
 
-      // Keep one class so older LessonBilly
-      // student records do not reappear incorrectly.
-      if (classes.length < 2) {
-        throw new Error(
-          "This is the student's last class. " +
-          "Keep at least one class on their record. " +
-          "Add another class first if you need to replace it."
-        );
-      }
-
-      // Find assessments belonging to this class.
-      const gradesSnapshot = await getDocs(
+      const grades = await getDocs(
         collection(
           db,
           "students",
@@ -124,107 +103,45 @@ export default function ClassDelete({
         )
       );
 
-      const classGrades =
-        gradesSnapshot.docs.filter(
-          grade =>
-            (
-              grade.data().classId ||
-              "original"
-            ) === classId
-        );
-
-      // Delete grades in batches.
-      for (
-        let i = 0;
-        i < classGrades.length;
-        i += 400
-      ) {
-        const batch = writeBatch(db);
-
-        classGrades
-          .slice(i, i + 400)
-          .forEach(grade => {
-            batch.delete(grade.ref);
-          });
-
-        await batch.commit();
-      }
-
-      // Remove the class without changing other
-      // classes or Google Drive links.
-      await runTransaction(
-        db,
-        async transaction => {
-          const latest =
-            await transaction.get(
-              studentRef
-            );
-
-          if (!latest.exists()) {
-            throw new Error(
-              "Student record not found."
-            );
-          }
-
-          const latestData =
-            latest.data();
-
-          const latestClasses =
-            Array.isArray(
-              latestData.classes
-            )
-              ? latestData.classes
-              : [
-                  {
-                    id: "original",
-                    name:
-                      latestData.subject ||
-                      "General tutoring"
-                  }
-                ];
-
-          if (latestClasses.length < 2) {
-            throw new Error(
-              "The student must retain at least one class."
-            );
-          }
-
-          if (
-            !latestClasses.some(
-              c => c.id === classId
-            )
-          ) {
-            throw new Error(
-              "The selected class no longer exists."
-            );
-          }
-
-          const remainingClasses =
-            latestClasses.filter(
-              c => c.id !== classId
-            );
-
-          transaction.update(
-            studentRef,
-            {
-              classes: remainingClasses,
-              subject:
-                remainingClasses[0]?.name ||
-                ""
-            }
-          );
-        }
+      const target = grades.docs.filter(
+        g =>
+          (g.data().classId || "original") ===
+          currentClass.id
       );
 
-      // Firestore's real-time listener updates
-      // the tutor and family dashboards.
-    } catch (error) {
+      if (target.length > 450) {
+        throw new Error(
+          "More than 450 assessments found. Contact your administrator for a safe bulk deletion."
+        );
+      }
+
+      const remaining = classes.filter(
+        c => c.id !== currentClass.id
+      );
+
+      const batch = writeBatch(db);
+
+      batch.delete(
+        doc(
+          db,
+          "students",
+          studentId,
+          "practice",
+          currentClass.id
+        )
+      );
+
+      target.forEach(g => batch.delete(g.ref));
+
+      batch.update(studentRef, {
+        classes: remaining,
+        subject: remaining[0]?.name || ""
+      });
+
+      await batch.commit();
+    } catch (e) {
       setError(
-        "Could not complete deletion. " +
-        "If the connection was interrupted, " +
-        "some grades may already have been deleted. " +
-        "Check Firestore or retry. " +
-        (error?.message || "")
+        `Deletion could not finish: ${e.message}. Check the record before trying again.`
       );
     } finally {
       setBusy(false);
@@ -235,55 +152,44 @@ export default function ClassDelete({
     <div
       style={{
         borderTop: "1px solid #e7edf7",
-        marginTop: 24,
-        paddingTop: 18
+        paddingTop: 20,
+        marginTop: 25
       }}
     >
-      <h3
-        style={{
-          fontSize: 16,
-          marginBottom: 9
-        }}
-      >
-        Remove student from this class
+      <h3 style={{ fontSize: 16 }}>
+        Remove this class
       </h3>
 
       <p className="muted tiny">
-        Permanently delete the selected class and
-        its assessment history from Firestore.
-        The student account and other classes
-        will remain. Google Drive files are not
-        deleted automatically.
+        Deletes the selected class, assessment
+        grades, and published practice activities.
+        The student and their other classes remain.
+        Google Drive files must be removed manually.
       </p>
 
       <button
         type="button"
         className="subtle-button"
-        disabled={busy}
-        onClick={deleteClass}
         style={{
-          background: "#fff0f0",
-          color: "#ab3636",
-          border: "1px solid #f0c8c8"
+          color: "#a52d36",
+          background: "#fff0f0"
         }}
+        disabled={busy}
+        onClick={remove}
       >
         <Trash2 size={16} />
 
         {busy
           ? "Deleting..."
-          : `Delete ${
-              currentClass?.name ||
-              "class"
-            } and its grades`}
+          : `Permanently delete ${
+              currentClass?.name || "class"
+            }`}
       </button>
 
       {error && (
-        <p
-          className="alert"
-          role="alert"
-        >
+        <div className="alert">
           {error}
-        </p>
+        </div>
       )}
     </div>
   );

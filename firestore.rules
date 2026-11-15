@@ -4,12 +4,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function hasAccount() {
-      return request.auth != null;
-    }
-
     function verified() {
-      return hasAccount() &&
+      return request.auth != null &&
         request.auth.token.email_verified == true;
     }
 
@@ -18,15 +14,15 @@ service cloud.firestore {
         request.auth.uid == "Yw2zbZef0lWUnq85M9hgGyBjpPj2";
     }
 
-    function hasStudentAccess(data) {
+    function canReadStudent(data) {
       return verified() && (
         request.auth.uid in data.get('parentUids', []) ||
         request.auth.uid in data.get('studentUids', [])
       );
     }
 
-    function canReadStudent(studentId) {
-      return isTutor() || hasStudentAccess(
+    function canReadStudentById(studentId) {
+      return isTutor() || canReadStudent(
         get(
           /databases/$(database)/documents/students/$(studentId)
         ).data
@@ -35,7 +31,7 @@ service cloud.firestore {
 
     match /profiles/{uid} {
 
-      allow create: if hasAccount() &&
+      allow create: if request.auth != null &&
         request.auth.uid == uid &&
         request.resource.data.keys().hasAll(
           ['email', 'name', 'role', 'createdAt']
@@ -61,16 +57,27 @@ service cloud.firestore {
     match /students/{studentId} {
 
       allow get, list: if isTutor() ||
-        hasStudentAccess(resource.data);
+        canReadStudent(resource.data);
 
       allow create, update, delete: if isTutor();
 
       match /grades/{gradeId} {
 
         allow get, list: if isTutor() || (
-          canReadStudent(studentId) &&
+          canReadStudentById(studentId) &&
           resource.data.published == true
         );
+
+        allow create, update, delete: if isTutor();
+      }
+
+      match /practice/{classId} {
+
+        // Only approved activity sets are saved.
+        // Student answers and scores are never written.
+        allow get: if canReadStudentById(studentId);
+
+        allow list: if isTutor();
 
         allow create, update, delete: if isTutor();
       }
