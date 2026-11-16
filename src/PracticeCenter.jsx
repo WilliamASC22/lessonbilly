@@ -245,93 +245,41 @@ function extractStudyPairs(text) {
   return pairs.slice(0, 10);
 }
 
-function draftFromNotes(text) {
-  const flashcards =
-    extractStudyPairs(text);
+// Older documents used one published flag for both activity types.
+// New documents publish each type independently.
+function isActivityPublished(data, type) {
+  const flag = type === "flashcards"
+    ? "flashcardsPublished"
+    : "quizzesPublished";
 
-  const explicitQuiz =
-    parseQuizzes(text);
-
-  const quizzes = [
-    ...explicitQuiz
-  ];
-
-  if (
-    quizzes.length === 0 &&
-    flashcards.length >= 4
-  ) {
-    flashcards.forEach(
-      (card, index) => {
-        if (
-          quizzes.length === 10
-        ) {
-          return;
-        }
-
-        const otherAnswers =
-          flashcards
-            .filter(
-              (item, i) =>
-                i !== index &&
-                item.back.toLowerCase() !==
-                  card.back.toLowerCase()
-            )
-            .map(item => item.back)
-            .filter(
-              (answer, i, all) =>
-                all.findIndex(
-                  a =>
-                    a.toLowerCase() ===
-                    answer.toLowerCase()
-                ) === i
-            );
-
-        if (
-          otherAnswers.length < 3
-        ) {
-          return;
-        }
-
-        const distractors = [
-          0, 1, 2
-        ].map(
-          offset =>
-            otherAnswers[
-              (index * 3 + offset) %
-              otherAnswers.length
-            ]
-        );
-
-        const answerIndex =
-          index % 4;
-
-        const options = [
-          ...distractors
-        ];
-
-        options.splice(
-          answerIndex,
-          0,
-          card.back
-        );
-
-        quizzes.push({
-          prompt: card.front,
-          options: options.map(
-            x => x.slice(0, 250)
-          ),
-          answerIndex,
-          explanation:
-            "Based on the answer provided in your lesson notes. Verify all choices before publishing."
-        });
-      }
-    );
+  if (typeof data?.[flag] === "boolean") {
+    return data[flag];
   }
 
-  return {
-    flashcards,
-    quizzes: quizzes.slice(0, 10)
-  };
+  if (data?.published !== true) {
+    return false;
+  }
+
+  if (type === "flashcards") {
+    return Array.isArray(data.flashcards) &&
+      data.flashcards.length === 10 &&
+      data.flashcards.every(
+        c => trim(c.front) && trim(c.back)
+      );
+  }
+
+  return Array.isArray(data.questions) &&
+    data.questions.length === 10 &&
+    data.questions.every(
+      q =>
+        trim(q.prompt) &&
+        Array.isArray(q.options) &&
+        q.options.length === 4 &&
+        q.options.every(a => trim(a)) &&
+        Number.isInteger(q.answerIndex) &&
+        q.answerIndex >= 0 &&
+        q.answerIndex <= 3
+    );
 }
 
 // Read text-based PDFs only.
@@ -450,11 +398,12 @@ export default function PracticeCenter({
   const [classId, setClassId] =
     useState("");
 
+  // Keep separate PDF text and notes for each activity.
   const [notes, setNotes] =
-    useState("");
+    useState({ flashcards: "", quizzes: "" });
 
   const [pdfName, setPdfName] =
-    useState("");
+    useState({ flashcards: "", quizzes: "" });
 
   const [cards, setCards] =
     useState(tenCards);
@@ -463,7 +412,7 @@ export default function PracticeCenter({
     useState(tenQuizzes);
 
   const [published, setPublished] =
-    useState(false);
+    useState({ flashcards: false, quizzes: false });
 
   const [loading, setLoading] =
     useState(true);
@@ -572,12 +521,12 @@ export default function PracticeCenter({
     setLoading(true);
     setError("");
     setNotice("");
-    setPublished(false);
+    setPublished({ flashcards: false, quizzes: false });
 
     setCards(tenCards());
     setQuestions(tenQuizzes());
-    setNotes("");
-    setPdfName("");
+    setNotes({ flashcards: "", quizzes: "" });
+    setPdfName({ flashcards: "", quizzes: "" });
     setTab("flashcards");
     setCardIndex(0);
     setQuizIndex(0);
@@ -597,24 +546,40 @@ export default function PracticeCenter({
       .then(snapshot => {
         if (!alive) return;
 
-        if (
-          snapshot.exists() &&
-          snapshot.data().published
-        ) {
-          const data =
-            snapshot.data();
+        if (snapshot.exists()) {
+          const data = snapshot.data();
 
-          setCards(
-            data.flashcards ||
-              tenCards()
-          );
+          const flashcardsPublished =
+            isActivityPublished(data, "flashcards");
+          const quizzesPublished =
+            isActivityPublished(data, "quizzes");
 
-          setQuestions(
-            data.questions ||
-              tenQuizzes()
-          );
+          if (flashcardsPublished || isTutor) {
+            setCards(
+              Array.isArray(data.flashcards) &&
+              data.flashcards.length === 10
+                ? data.flashcards
+                : tenCards()
+            );
+          }
 
-          setPublished(true);
+          if (quizzesPublished || isTutor) {
+            setQuestions(
+              Array.isArray(data.questions) &&
+              data.questions.length === 10
+                ? data.questions
+                : tenQuizzes()
+            );
+          }
+
+          setPublished({
+            flashcards: flashcardsPublished,
+            quizzes: quizzesPublished
+          });
+
+          if (!flashcardsPublished && quizzesPublished) {
+            setTab("quizzes");
+          }
         }
       })
       .catch(e => {
@@ -633,7 +598,8 @@ export default function PracticeCenter({
     };
   }, [
     studentId,
-    selectedClass?.id
+    selectedClass?.id,
+    isTutor
   ]);
 
   function resetPractice() {
@@ -723,14 +689,20 @@ export default function PracticeCenter({
         );
       }
 
-      setNotes(
-        await readPdf(file)
-      );
+      const text = await readPdf(file);
 
-      setPdfName(file.name);
+      setNotes(old => ({
+        ...old,
+        [tab]: text
+      }));
+
+      setPdfName(old => ({
+        ...old,
+        [tab]: file.name
+      }));
 
       setNotice(
-        "PDF text extracted. Review it before creating activities."
+        `PDF text extracted for ${tab === "flashcards" ? "flashcards" : "quiz"}. Review it before creating drafts.`
       );
     } catch (e) {
       setError(e.message);
@@ -738,7 +710,9 @@ export default function PracticeCenter({
   }
 
   function generate() {
-    if (!notes.trim()) {
+    const text = notes[tab];
+
+    if (!text.trim()) {
       setError(
         "Paste lesson material or upload a text-based PDF first."
       );
@@ -747,35 +721,39 @@ export default function PracticeCenter({
 
     setError("");
 
-    const result =
-      draftFromNotes(notes);
+    // Build ONLY the currently selected activity type.
+    // Flashcard answers are no longer reused as quiz choices.
+    const result = tab === "flashcards"
+      ? extractStudyPairs(text)
+      : parseQuizzes(text);
 
-    setCards(
-      [
-        ...result.flashcards,
-        ...tenCards()
-      ].slice(0, 10)
-    );
+    if (tab === "flashcards") {
+      setCards(
+        [
+          ...result,
+          ...tenCards()
+        ].slice(0, 10)
+      );
+    } else {
+      setQuestions(
+        [
+          ...result,
+          ...tenQuizzes()
+        ].slice(0, 10)
+      );
+    }
 
-    setQuestions(
-      [
-        ...result.quizzes,
-        ...tenQuizzes()
-      ].slice(0, 10)
-    );
+    resetPractice();
 
-    setPublished(false);
-
-    if (
-      !result.flashcards.length &&
-      !result.quizzes.length
-    ) {
+    if (!result.length) {
       setNotice(
-        "No explicit questions and answers were found. Add them as Q: ... then A: ... on separate lines, or fill in the blank templates. The tool will not guess answers."
+        tab === "flashcards"
+          ? "No flashcard answer pairs found. Use CARD|question|answer or Q: and A: lines, or fill the blanks manually."
+          : "No quiz questions found. Use QUIZ|question|A|B|C|D|correct number 1-4|explanation, or fill the blanks manually."
       );
     } else {
       setNotice(
-        `Created ${result.flashcards.length}/10 flashcard drafts and ${result.quizzes.length}/10 quiz drafts from your notes. Verify every answer and distractor, then finish the remaining blanks before publishing.`
+        `Created ${result.length}/10 ${tab === "flashcards" ? "flashcard" : "quiz"} drafts. Review all answers and finish any blanks before publishing this activity. The other activity was not changed.`
       );
     }
   }
@@ -790,38 +768,37 @@ export default function PracticeCenter({
       return;
     }
 
-    const invalid =
-      cards.length !== 10 ||
-      questions.length !== 10 ||
-      cards.some(
-        c =>
-          !trim(c.front) ||
-          !trim(c.back)
-      ) ||
-      questions.some(
-        q =>
-          !trim(q.prompt) ||
-          q.options?.length !== 4 ||
-          q.options.some(
-            a => !trim(a)
-          ) ||
-          !Number.isInteger(
-            q.answerIndex
-          ) ||
-          q.answerIndex < 0 ||
-          q.answerIndex > 3
-      );
+    const isFlashcards = tab === "flashcards";
+    const invalid = isFlashcards
+      ? cards.length !== 10 ||
+        cards.some(
+          c =>
+            !trim(c.front) ||
+            !trim(c.back)
+        )
+      : questions.length !== 10 ||
+        questions.some(
+          q =>
+            !trim(q.prompt) ||
+            q.options?.length !== 4 ||
+            q.options.some(a => !trim(a)) ||
+            !Number.isInteger(q.answerIndex) ||
+            q.answerIndex < 0 ||
+            q.answerIndex > 3
+        );
 
     if (invalid) {
       setError(
-        "Complete all 10 flashcards and 10 quiz questions, including four answers and a correct-answer selection for each quiz question."
+        isFlashcards
+          ? "Complete all 10 flashcards before publishing."
+          : "Complete all 10 quiz questions, including four choices and a correct answer for each question."
       );
       return;
     }
 
     if (
       !window.confirm(
-        `Publish these 20 tutor-approved activities for ${student.name} - ${selectedClass.name}? Students will see them immediately.`
+        `Publish 10 ${isFlashcards ? "flashcards" : "quiz questions"} for ${student.name} - ${selectedClass.name}? Only this activity type will be replaced.`
       )
     ) {
       return;
@@ -832,6 +809,30 @@ export default function PracticeCenter({
     setNotice("");
 
     try {
+      const activityData = isFlashcards
+        ? {
+            flashcardsPublished: true,
+            flashcards:
+              cards.map(c => ({
+                front: trim(c.front).slice(0, 500),
+                back: trim(c.back).slice(0, 700)
+              }))
+          }
+        : {
+            quizzesPublished: true,
+            questions:
+              questions.map(q => ({
+                prompt: trim(q.prompt).slice(0, 500),
+                options:
+                  q.options.map(x =>
+                    trim(x).slice(0, 250)
+                  ),
+                answerIndex: q.answerIndex,
+                explanation:
+                  trim(q.explanation).slice(0, 600)
+              }))
+          };
+
       await setDoc(
         doc(
           db,
@@ -842,61 +843,21 @@ export default function PracticeCenter({
         ),
         {
           published: true,
-          classId:
-            selectedClass.id,
-
-          flashcards:
-            cards.map(c => ({
-              front:
-                trim(c.front).slice(
-                  0,
-                  500
-                ),
-              back:
-                trim(c.back).slice(
-                  0,
-                  700
-                )
-            })),
-
-          questions:
-            questions.map(q => ({
-              prompt:
-                trim(q.prompt).slice(
-                  0,
-                  500
-                ),
-
-              options:
-                q.options.map(x =>
-                  trim(x).slice(
-                    0,
-                    250
-                  )
-                ),
-
-              answerIndex:
-                q.answerIndex,
-
-              explanation:
-                trim(
-                  q.explanation
-                ).slice(
-                  0,
-                  600
-                )
-            })),
-
-          updatedAt:
-            serverTimestamp()
-        }
+          classId: selectedClass.id,
+          ...activityData,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
       );
 
-      setPublished(true);
+      setPublished(old => ({
+        ...old,
+        [tab]: true
+      }));
       resetPractice();
 
       setNotice(
-        "Published! Students and linked parents can open the new activities in Practice Center."
+        `Published ${isFlashcards ? "flashcards" : "quiz questions"}! The other activity remains unchanged.`
       );
     } catch (e) {
       setError(e.message);
@@ -1049,8 +1010,9 @@ export default function PracticeCenter({
             </h2>
 
             <p className="muted tiny">
-              Upload a text-based PDF or paste
-              notes. For reliable drafts,
+              Select Flashcards or Quiz below, then
+              upload a PDF or paste notes for that type.
+              For reliable flashcard drafts,
               format each pair on two lines:
               {" "}
               <strong>
@@ -1071,85 +1033,8 @@ export default function PracticeCenter({
               <strong>
                 QUIZ|question|A|B|C|D|correct number 1-4|explanation
               </strong>
-              . This tool does not invent
-              answers from unstructured text.
-            </p>
-
-            <label className="lb-practice-file">
-              <FileUp size={18} />
-              Upload PDF (max 5 MB)
-
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                onChange={handlePdf}
-              />
-            </label>
-
-            {pdfName && (
-              <p className="muted tiny">
-                Loaded: {pdfName}
-              </p>
-            )}
-
-            <label className="lb-practice-label">
-              Lesson notes
-
-              <textarea
-                rows={8}
-                value={notes}
-                maxLength={11000}
-                onChange={e => {
-                  setNotes(e.target.value);
-                  setPdfName("");
-                }}
-                placeholder="Paste lesson notes or upload a text-based PDF..."
-              />
-            </label>
-
-            <div className="lb-practice-actions">
-              <button
-                className="button"
-                onClick={generate}
-                disabled={busy}
-              >
-                <WandSparkles size={17} />
-                Build drafts from answer pairs
-              </button>
-
-              <button
-                className="subtle-button"
-                onClick={() => {
-                  setCards(tenCards());
-                  setQuestions(tenQuizzes());
-                  setPublished(false);
-                  setNotice(
-                    "Created blank drafts to edit manually."
-                  );
-                }}
-                disabled={busy}
-              >
-                <Plus size={16} />
-                Start with blank drafts
-              </button>
-            </div>
-          </div>
-
-          <div className="panel lb-practice-editor">
-            <h2>
-              Step 2 - Review and correct every answer
-            </h2>
-
-            <p className="muted tiny">
-              Quiz distractors are pulled from
-              other answers in your notes and may
-              be misleading or wrong. Verify
-              every choice, question and answer
-              key before publishing. If the
-              source lacks explicit answer pairs,
-              enter questions manually.
-              Unpublished drafts disappear
-              on reload.
+              . A flashcard upload creates only flashcards;
+              a quiz upload creates only quizzes.
             </p>
 
             <div className="lb-practice-tabs">
@@ -1179,6 +1064,90 @@ export default function PracticeCenter({
                 10 Quiz questions
               </button>
             </div>
+
+            <label className="lb-practice-file">
+              <FileUp size={18} />
+              Upload {tab === "flashcards" ? "Flashcards" : "Quiz"} PDF (max 5 MB)
+
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={handlePdf}
+              />
+            </label>
+
+            {pdfName[tab] && (
+              <p className="muted tiny">
+                Loaded: {pdfName[tab]}
+              </p>
+            )}
+
+            <label className="lb-practice-label">
+              Lesson notes
+
+              <textarea
+                rows={8}
+                value={notes[tab]}
+                maxLength={11000}
+                onChange={e => {
+                  setNotes(old => ({
+                    ...old,
+                    [tab]: e.target.value
+                  }));
+                  setPdfName(old => ({
+                    ...old,
+                    [tab]: ""
+                  }));
+                }}
+                placeholder={`Paste ${tab === "flashcards" ? "flashcard" : "quiz"} notes or upload a text-based PDF...`}
+              />
+            </label>
+
+            <div className="lb-practice-actions">
+              <button
+                className="button"
+                onClick={generate}
+                disabled={busy}
+              >
+                <WandSparkles size={17} />
+                Build {tab === "flashcards" ? "flashcard" : "quiz"} drafts
+              </button>
+
+              <button
+                className="subtle-button"
+                onClick={() => {
+                  if (tab === "flashcards") {
+                    setCards(tenCards());
+                  } else {
+                    setQuestions(tenQuizzes());
+                  }
+                  resetPractice();
+                  setNotice(
+                    `Created blank ${tab === "flashcards" ? "flashcard" : "quiz"} drafts. The other activity was not changed.`
+                  );
+                }}
+                disabled={busy}
+              >
+                <Plus size={16} />
+                Start with blank drafts
+              </button>
+            </div>
+          </div>
+
+          <div className="panel lb-practice-editor">
+            <h2>
+              Step 2 - Review and correct every answer
+            </h2>
+
+            <p className="muted tiny">
+              Verify every question and answer
+              before publishing. Quiz choices and
+              answer keys must come from your own
+              material, not unrelated flashcard
+              answers. Unpublished drafts disappear
+              on reload, but existing published
+              activities remain available.
+            </p>
 
             {tab === "flashcards"
               ? cards.map(
@@ -1341,11 +1310,11 @@ export default function PracticeCenter({
             </h2>
 
             <p className="muted tiny">
-              This replaces the previously
-              published activity set for
-              this class. Students' practice
-              attempts and answers are not
-              stored in Firestore.
+              This replaces only the selected
+              activity type for this class.
+              The other published activity stays
+              available. Students' practice
+              answers are not stored in Firestore.
             </p>
 
             <button
@@ -1355,13 +1324,13 @@ export default function PracticeCenter({
             >
               <CheckCircle2 size={18} />
 
-              {published
-                ? "Republish reviewed activities"
-                : "Publish 10 flashcards + 10 questions"}
+              {published[tab]
+                ? `Republish 10 ${tab === "flashcards" ? "flashcards" : "quiz questions"}`
+                : `Publish 10 ${tab === "flashcards" ? "flashcards" : "quiz questions"}`}
             </button>
           </div>
         </>
-      ) : !published ? (
+      ) : !published.flashcards && !published.quizzes ? (
         <div className="panel empty-small">
           Your tutor hasn't published practice
           activities for this class yet.
@@ -1369,33 +1338,37 @@ export default function PracticeCenter({
       ) : (
         <>
           <div className="lb-practice-tabs">
-            <button
-              className={
-                tab === "flashcards"
-                  ? "selected"
-                  : ""
-              }
-              onClick={() =>
-                setTab("flashcards")
-              }
-            >
-              <Layers size={17} />
-              Flashcards
-            </button>
+            {published.flashcards && (
+              <button
+                className={
+                  tab === "flashcards"
+                    ? "selected"
+                    : ""
+                }
+                onClick={() =>
+                  setTab("flashcards")
+                }
+              >
+                <Layers size={17} />
+                Flashcards
+              </button>
+            )}
 
-            <button
-              className={
-                tab === "quizzes"
-                  ? "selected"
-                  : ""
-              }
-              onClick={() =>
-                setTab("quizzes")
-              }
-            >
-              <BookOpenCheck size={17} />
-              Quiz
-            </button>
+            {published.quizzes && (
+              <button
+                className={
+                  tab === "quizzes"
+                    ? "selected"
+                    : ""
+                }
+                onClick={() =>
+                  setTab("quizzes")
+                }
+              >
+                <BookOpenCheck size={17} />
+                Quiz
+              </button>
+            )}
           </div>
 
           {tab === "flashcards" ? (

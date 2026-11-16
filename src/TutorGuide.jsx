@@ -48,7 +48,7 @@ LessonBilly`
 
 Hello,
 
-I have published new tutor-reviewed flashcards and quiz questions. Sign in at ${site}, open Practice Center and select your class.
+I have published new tutor-reviewed practice activities. Sign in at ${site}, open Practice Center and select your class.
 
 Practice attempts are not saved or counted as grades.
 
@@ -89,11 +89,11 @@ LessonBilly`
       title: "4. Create practice without a large AI model",
       instructions: [
         "Open Practice Center and select the student and class.",
-        "Paste explicit answer pairs, using Q: followed by A: on a separate line. CARD|question|answer and QUIZ|question|choice A|choice B|choice C|choice D|correct answer 1-4|explanation also work.",
+        "Choose Flashcards or Quiz first, then upload a PDF or paste notes for that activity. Flashcards support CARD|question|answer or Q: and A: lines. Quizzes support QUIZ|question|choice A|choice B|choice C|choice D|correct answer 1-4|explanation.",
         "You may upload a text-based PDF. For scanned or poorly formatted PDFs, paste or type the source text instead.",
-        "Select Build drafts from answer pairs. The tool uses existing answers, not a language model, so it won't make up solutions.",
-        "Check all 10 flashcards and 10 quiz questions. Automatically chosen incorrect choices may need editing.",
-        "Publish only when every fact and answer key has been verified. Unpublished drafts disappear on reload."
+        "Select Build flashcard drafts or Build quiz drafts. This fills only the selected activity and never generates quizzes from flashcard answers.",
+        "Review all 10 flashcards or all 10 quiz questions, including the correct answer for each quiz question.",
+        "Publish the reviewed flashcards or quiz separately. Publishing one does not replace the other. Unpublished drafts disappear on reload."
       ]
     },
     {
@@ -112,7 +112,7 @@ LessonBilly`
         "Missing student profile: confirm the account was registered and its email verified.",
         "Permission denied: confirm the actual tutor UID matches published Firestore rules and firebase.js.",
         "Drive file access denied: verify which Google account was invited as Viewer.",
-        "No practice drafts: format notes as Q: and A: pairs or fill the blank editors manually.",
+        "No flashcard drafts: use CARD lines or Q: and A: pairs. For quiz drafts, use complete QUIZ lines or enter questions manually.",
         "Practice Center does not need WebGPU, an API key or a model download anymore."
       ]
     }
