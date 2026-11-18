@@ -1,342 +1,382 @@
 
 # LessonBilly
 
-**Learn confidently. Grow consistently.**
+**Personalized online tutoring with interactive practice, progress tracking, and private learning portals.**
 
-LessonBilly is a full-stack online tutoring platform designed to make learning more organized, accessible, and personalized for K-12 students.
+LessonBilly is a full-stack online tutoring platform built with React, Vite, Firebase, and Cloudflare Pages.
 
-Built with React, Vite, Firebase, and Cloudflare Pages, the platform connects tutors, students, and parents through private learning portals.
+It combines a public tutoring website with private portals for tutors, students, and parents. Students can access class materials, complete tutor-reviewed practice activities, and monitor their academic progress.
 
-The goal is to provide a simple tutoring experience with organized class materials, interactive practice, and transparent progress tracking.
+The platform focuses on making tutoring more organized, accessible, and personalized for K-12 students.
 
 ---
 
-## Quick Navigation
+## Explore LessonBilly
 
-- [Overview](#overview)
 - [Features](#features)
-- [Practice Center](#practice-center)
+- [Interactive Platform Tour](#interactive-platform-tour)
+- [How Practice Center Works](#how-practice-center-works)
+- [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
-- [Local Development](#local-development)
+- [Local Setup](#local-setup)
 - [Deployment](#deployment)
 - [Security and Privacy](#security-and-privacy)
 
 ---
 
-## Overview
-
-LessonBilly combines one-on-one remote tutoring with a centralized learning platform.
-
-The website includes:
-
-- A responsive public landing page
-- Separate student and parent login interfaces
-- Private learning dashboards
-- Tutor-managed classes and student records
-- Interactive flashcards and quizzes
-- Assessment tracking and feedback
-- Class-specific learning materials
-- Google Meet lesson scheduling
-- An AI-powered tutoring match assistant
-
-The platform is designed to operate using free service tiers, subject to their usage limits.
-
----
-
 ## Features
 
-Explore LessonBilly's features by expanding the sections below.
+| Feature | Description |
+|---|---|
+| Personalized tutoring | One-on-one remote tutoring for K-12 students |
+| Tutor dashboard | Manage students, classes, schedules, and grades |
+| Student portal | Access lessons, materials, grades, and practice |
+| Parent portal | Monitor published academic progress |
+| Practice Center | Interactive flashcards and multiple-choice quizzes |
+| Independent publishing | Upload and publish quizzes and flashcards separately |
+| PDF activity creation | Extract structured practice content from text-based PDFs |
+| AI Tutoring Match | Suggests potential tutoring subjects based on academic challenges |
+| Class materials | Share homework and classwork through Google Drive links |
+| Lesson scheduling | Class-specific Google Meet links and lesson durations |
+| Progress tracking | Publish assessment scores and feedback |
+| Responsive design | Desktop and mobile layouts with scroll animations |
+
+### Built for Three Types of Users
+
+**Tutor**
+- Create and manage student records.
+- Add multiple classes for each student.
+- Schedule remote lessons.
+- Upload and publish practice activities.
+- Manage assessment grades and class materials.
+
+**Student**
+- Access assigned classes.
+- Review published flashcards.
+- Complete multiple-choice quizzes.
+- View published grades and tutor feedback.
+- Access class materials and meeting links.
+
+**Parent**
+- Monitor student progress.
+- View published assessment scores.
+- Access class schedules and materials.
+- Review tutor-approved practice activities.
+
+---
+
+## Interactive Platform Tour
+
+Explore the platform by expanding the sections below.
 
 <details>
-<summary><strong>1. Tutor Dashboard</strong></summary>
+<summary><strong>1. Tutor Dashboard - Managing Students</strong></summary>
 
-The tutor dashboard provides tools for managing students and their learning progress.
+### Student Management
 
-Features include:
+The tutor dashboard provides tools for managing students and their classes.
 
-- Add and manage student records
-- Assign and update student grade levels
-- Manage multiple classes per student
-- Connect approved student and parent accounts
-- Schedule upcoming tutoring sessions
-- Manage assessment scores
-- Publish grades and feedback
-- Access class-specific learning resources
+Available functionality includes:
 
-Only the authorized tutor can modify student records and assessment information.
+- Creating student records.
+- Updating grade levels.
+- Managing multiple subjects per student.
+- Linking verified parent and student accounts.
+- Creating and publishing assessment grades.
+- Scheduling Google Meet sessions.
+
+Each class maintains its own schedule, materials, assessments, and practice activities.
 
 </details>
 
 <details>
-<summary><strong>2. Student and Parent Portals</strong></summary>
+<summary><strong>2. Practice Center - Flashcards</strong></summary>
 
-LessonBilly provides separate sign-in interfaces for students and parents.
+### Interactive Flashcards
 
-Students can:
+The tutor can upload a text-based PDF containing flashcards or enter questions and answers manually.
 
-- View their assigned classes
-- Access published grades
-- Review tutor-approved practice activities
-- Open homework and classwork materials
-- Access lesson meeting links
+Supported format:
 
-Parents can:
+```text
+CARD|What is a numerator?|The top number in a fraction.
+CARD|What is a denominator?|The bottom number in a fraction.
+```
 
-- View their student's progress
-- Review published assessment results
-- Access class resources
-- Monitor upcoming tutoring sessions
+The system extracts the question-and-answer pairs into editable flashcard drafts.
 
-Accounts use Firebase Authentication and email verification.
+The tutor reviews all 10 flashcards before publishing.
 
-The tutor connects approved accounts to student records.
+Students can then flip through cards, reveal answers, and move between questions.
+
+**Flashcards can be published without creating a quiz.**
 
 </details>
 
 <details>
-<summary><strong>3. Practice Center</strong></summary>
+<summary><strong>3. Practice Center - Multiple-Choice Quizzes</strong></summary>
 
-The Practice Center allows tutors to create and publish interactive learning activities.
+### Interactive Quizzes
 
-Supported activities:
+The tutor can upload a separate PDF containing multiple-choice questions.
 
-- Flashcards
-- Multiple-choice quizzes
+Supported format:
 
-Tutors can:
+```text
+QUIZ|What is the numerator in 3/8?|3|8|11|5|1|The numerator is the top number.
+```
 
-- Upload text-based PDF files
-- Extract questions and answers
-- Generate editable activity drafts
-- Review and correct answers
-- Publish flashcards independently
-- Publish quizzes independently
-- Update one activity without replacing the other
+Each quiz question includes:
 
-Students can review flashcards and answer quiz questions directly in their browsers.
+- One question.
+- Four answer choices.
+- One correct answer.
+- An optional explanation.
 
-Quiz attempts and answers are not saved as grades.
+The tutor reviews all 10 questions before publishing.
 
-</details>
+Students can select an answer, check their response, and receive immediate feedback.
 
-<details>
-<summary><strong>4. Class Materials</strong></summary>
+Their practice attempts are not stored in Firestore.
 
-Each student can have multiple classes with their own learning resources.
-
-The tutor can share:
-
-- Homework PDFs
-- Classwork PDFs
-- Class-specific Google Drive links
-
-Google Drive sharing permissions are managed separately.
-
-Families can open resources shared with their authorized accounts.
+**Quizzes can be published without creating flashcards.**
 
 </details>
 
 <details>
-<summary><strong>5. Assessment and Grade Tracking</strong></summary>
+<summary><strong>4. Parent and Student Portals</strong></summary>
 
-The tutor can create assessments for individual students and classes.
+### Private Learning Access
 
-Each assessment can include:
+Parents and students use separate sign-in interfaces.
 
-- Assessment title
-- Points earned
-- Total possible points
-- Written feedback
-- Publication status
+Firebase Authentication verifies accounts, while Cloud Firestore Security Rules restrict access to authorized student records.
 
-Assessment results remain unpublished until the tutor decides to release them.
+Parents and students can access their linked records and published materials.
 
-Students and parents can view published grades.
+The tutor controls which assessment scores and practice activities become available.
+
+Unpublished grades remain private to the tutor.
 
 </details>
 
 <details>
-<summary><strong>6. Online Lesson Scheduling</strong></summary>
+<summary><strong>5. AI Tutoring Match</strong></summary>
 
-LessonBilly supports class-specific Google Meet links and upcoming lesson schedules.
+### Find a Potential Tutoring Focus
 
-Supported session durations:
+The public website includes a lightweight machine-learning feature that helps prospective families explore tutoring options.
 
-- 1 hour
-- 1.5 hours
-- 2 hours
-- 2.5 hours
-- 3 hours
+Visitors can provide:
 
-Video calls are hosted externally through Google Meet.
+- Student grade level.
+- Academic subject.
+- Learning challenge.
+- Tutoring goal.
+- Preferred weekly tutoring hours.
 
-LessonBilly does not store meeting recordings.
+A browser-based Naive Bayes text classifier suggests a possible tutoring subject using example training descriptions.
 
-</details>
+The feature also generates an illustrative tutoring plan and a message that families can choose to send.
 
-<details>
-<summary><strong>7. AI Tutoring Match Assistant</strong></summary>
+The classifier:
 
-The public landing page includes a lightweight machine-learning assistant.
+- Runs directly in the browser.
+- Does not require an external AI API.
+- Does not require a GPU.
+- Does not have a daily AI token quota.
 
-Visitors can:
-
-- Select a grade level
-- Describe an academic challenge
-- Choose a tutoring goal
-- Select preferred weekly tutoring hours
-- Receive a suggested tutoring subject
-- Preview a potential tutoring approach
-- Prepare a tutoring inquiry email
-
-The assistant uses a lightweight Naive Bayes text classifier.
-
-It runs locally in the browser without requiring an AI API key, GPU, or model download.
-
-The recommendations are illustrative and are not validated educational assessments.
-
-</details>
-
-<details>
-<summary><strong>8. Built-in Tutor Guide</strong></summary>
-
-LessonBilly includes a private Tutor Guide explaining how to:
-
-- Enroll students and families
-- Connect student and parent accounts
-- Manage classes
-- Publish assessment results
-- Share learning materials
-- Create flashcards and quizzes
-- Schedule tutoring sessions
-- Troubleshoot common issues
-
-The guide also provides copyable email templates for communicating with families.
-
-Emails are sent manually.
+It is not a diagnostic assessment or a replacement for a tutor.
 
 </details>
 
 ---
 
-## Practice Center
+## How Practice Center Works
 
-The Practice Center is one of LessonBilly's core learning features.
+Practice Center uses a tutor-reviewed workflow rather than automatically publishing generated answers.
 
-### Flashcards
+### Activity Publishing Workflow
 
-Tutors can create flashcards manually or import them from a text-based PDF.
+```mermaid
+flowchart TD
+    A["Tutor selects student and class"]
+    B{"Choose activity"}
+    C["Flashcards"]
+    D["Quiz"]
+    E["Upload PDF or paste notes"]
+    F["Create editable drafts"]
+    G["Tutor verifies answers"]
+    H["Publish selected activity"]
+    I["Student opens Practice Center"]
 
-Example format:
+    A --> B
+    B --> C
+    B --> D
+    C --> E
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+```
 
-`CARD|What is a numerator?|The top number in a fraction.`
+### Independent Activity Publishing
 
-Each flashcard contains:
+Flashcards and quizzes are managed separately.
 
-- A question on the front
-- An answer on the back
-
-Students can flip flashcards and navigate between questions.
-
-### Quizzes
-
-Tutors can create multiple-choice quizzes manually or import them from a text-based PDF.
-
-Example format:
-
-`QUIZ|What is 2 + 2?|3|4|5|6|2|2 + 2 equals 4.`
-
-Each quiz question contains:
-
-- A question
-- Four answer choices
-- One correct answer
-- An optional explanation
-
-Students receive immediate feedback when checking their answers.
-
-### Independent Publishing
-
-Flashcards and quizzes are managed independently.
-
-| Action | Flashcards | Quizzes |
+| Action | Flashcards | Quiz |
 |---|---|---|
 | Upload flashcard PDF | Updated | Unchanged |
 | Upload quiz PDF | Unchanged | Updated |
 | Publish flashcards | Published | Unchanged |
 | Publish quiz | Unchanged | Published |
 
-The tutor reviews all 10 items before publishing an activity.
+Each class supports a set of 10 flashcards and a separate set of 10 multiple-choice questions.
 
-Publishing one activity does not replace the other.
+Publishing one activity does not overwrite the other.
 
-PDF text extraction runs in the browser. The original practice PDF is not uploaded to Firebase.
+Existing published activities stay available while the tutor prepares new drafts.
 
-Unpublished editor drafts are not retained after reloading the page.
+### Privacy-Friendly Practice
+
+PDF text is processed in the browser to prepare practice drafts.
+
+Only approved activity content is saved to Firestore when published.
+
+Student practice responses and scores are maintained temporarily in the browser and are not stored in Firestore.
+
+---
+
+## System Architecture
+
+LessonBilly uses a React frontend, Firebase Authentication, Cloud Firestore, and Cloudflare Pages.
+
+```mermaid
+flowchart TD
+    A["LessonBilly Website"]
+    B["Public Landing Page"]
+    C["Private Learning Portal"]
+    D["AI Tutoring Match"]
+    E["Firebase Authentication"]
+    F["Tutor Dashboard"]
+    G["Student and Parent Portals"]
+    H["Cloud Firestore"]
+    I["Practice Center"]
+    J["PDF Text Extraction"]
+    K["Google Drive Class Materials"]
+
+    A --> B
+    A --> C
+    B --> D
+    C --> E
+    E --> F
+    E --> G
+    F --> H
+    G --> H
+    F --> I
+    G --> I
+    I --> J
+    I --> H
+    F --> K
+    G --> K
+```
+
+### Architecture Highlights
+
+**Frontend:** React components handle the public website, dashboards, activity editors, and student practice interfaces.
+
+**Authentication:** Firebase Authentication provides email/password sign-in and email verification.
+
+**Database:** Cloud Firestore stores student records, class information, assessment grades, and published practice activities.
+
+**Security:** Firestore Security Rules enforce tutor permissions and linked student/parent access.
+
+**Hosting:** Cloudflare Pages hosts the frontend using a production Vite build.
+
+**PDF processing:** PDF.js extracts text from uploaded practice PDFs in the browser.
 
 ---
 
 ## Technology Stack
 
-| Technology | Purpose |
+| Category | Technology |
 |---|---|
-| React | User interface |
-| Vite | Development and production builds |
-| JavaScript / JSX | Application logic |
-| Firebase Authentication | Account registration and authentication |
-| Cloud Firestore | Student records and published learning content |
-| Cloudflare Pages | Website hosting |
-| Motion | Interface animations |
-| Lucide React | Interface icons |
-| PDF.js | Browser-based PDF text extraction |
-| Google Meet | Online tutoring sessions |
-| Google Drive | Shared class materials |
-| GitHub | Version control |
+| Frontend | React 19 |
+| Build Tool | Vite |
+| Language | JavaScript / JSX |
+| Authentication | Firebase Authentication |
+| Database | Cloud Firestore |
+| Animations | Motion |
+| Icons | Lucide React |
+| PDF Processing | PDF.js |
+| Hosting | Cloudflare Pages |
+| Version Control | Git and GitHub |
+
+### Project Structure
+
+```text
+LessonBilly/
+├── src/
+│   ├── App.jsx
+│   ├── ClassDelete.jsx
+│   ├── ClassMaterials.jsx
+│   ├── DriveMaterials.jsx
+│   ├── FeatureShowcase.jsx
+│   ├── firebase.js
+│   ├── index.css
+│   ├── learningClassifier.js
+│   ├── LearningNeedsAssistant.jsx
+│   ├── main.jsx
+│   ├── PracticeCenter.jsx
+│   ├── StudyChat.jsx
+│   └── TutorGuide.jsx
+├── worker/
+│   └── src/
+│       └── index.js
+├── firestore.rules
+├── index.html
+├── package.json
+├── README.md
+└── vite.config.js
+```
 
 ---
 
-## Local Development
+## Local Setup
 
 <details>
-<summary><strong>Expand installation instructions</strong></summary>
+<summary><strong>Step 1 - Install Dependencies</strong></summary>
 
-### 1. Install Node.js
+Install Node.js and open the project in VS Code.
 
-Install a supported version of Node.js.
-
-### 2. Clone the Repository
-
-```bash
-git clone YOUR_REPOSITORY_URL
-cd LessonBilly
-```
-
-Replace `YOUR_REPOSITORY_URL` with the repository's actual GitHub URL.
-
-### 3. Install Dependencies
+Run:
 
 ```bash
 npm install
 ```
 
-### 4. Configure Firebase
+</details>
 
-Open:
+<details>
+<summary><strong>Step 2 - Configure Firebase</strong></summary>
 
-`src/firebase.js`
+1. Create a Firebase project.
+2. Enable Email/Password Authentication.
+3. Create a Cloud Firestore database.
+4. Configure `src/firebase.js` using your Firebase web app settings.
+5. Add your tutor UID to `src/firebase.js`.
+6. Add the same tutor UID to `firestore.rules`.
+7. Publish the Firestore security rules.
 
-Add the Firebase web application configuration from Firebase Console.
+Never commit private service account credentials.
 
-Configure the authorized tutor UID in:
+</details>
 
-- `src/firebase.js`
-- `firestore.rules`
+<details>
+<summary><strong>Step 3 - Configure Environment Variables</strong></summary>
 
-Both tutor UID values must match.
-
-### 5. Configure Environment Variables
-
-Create a `.env.local` file.
+Create `.env.local` in the main project directory.
 
 Add:
 
@@ -344,26 +384,28 @@ Add:
 VITE_CONTACT_EMAIL=your-email@example.com
 ```
 
-Replace the placeholder with the contact email for your tutoring service.
+Replace the example address with your contact email.
 
-Do not commit private credentials or service account keys.
+Do not commit `.env.local` to GitHub.
 
-### 6. Configure Firebase Services
+</details>
 
-In Firebase Console:
+<details>
+<summary><strong>Step 4 - Start the Development Server</strong></summary>
 
-1. Enable Email/Password Authentication.
-2. Create a Cloud Firestore database.
-3. Publish the security rules from `firestore.rules`.
-4. Verify authorized domains for Firebase Authentication.
-
-### 7. Run the Website
+Run:
 
 ```bash
 npm run dev
 ```
 
-Open the local development URL displayed in your terminal.
+Open the local URL displayed in your terminal.
+
+To check the production build:
+
+```bash
+npm run build
+```
 
 </details>
 
@@ -371,128 +413,85 @@ Open the local development URL displayed in your terminal.
 
 ## Deployment
 
-<details>
-<summary><strong>Expand Cloudflare deployment instructions</strong></summary>
-
-LessonBilly is deployed through Cloudflare Pages.
-
-### Build Configuration
+LessonBilly is deployed using Cloudflare Pages.
 
 | Setting | Value |
 |---|---|
-| Framework | React (Vite) |
-| Production branch | main |
-| Build command | npm run build |
-| Output directory | dist |
+| Production branch | `main` |
+| Framework | React / Vite |
+| Build command | `npm run build` |
+| Output directory | `dist` |
 
-### Environment Variables
+### Deployment Checklist
 
-Configure the required Vite environment variables in Cloudflare Pages.
+1. Connect the GitHub repository to Cloudflare Pages.
+2. Configure the production build settings.
+3. Add `VITE_CONTACT_EMAIL` to the build environment.
+4. Authorize the deployed domain in Firebase Authentication.
+5. Publish the required Firestore Security Rules.
+6. Test the tutor, parent, and student portals using fictional accounts.
 
-Example:
+Updates pushed to the production branch can trigger automatic Cloudflare Pages deployments when enabled.
 
-`VITE_CONTACT_EMAIL`
+---
 
-Additional environment variables may be required for optional features.
+## Tutor Instructions
 
-### Firebase Authentication
+After signing in with the tutor account, open Dashboard.
 
-Add the deployed Cloudflare Pages domain to the authorized domains in Firebase Authentication.
+The built-in Tutor Guide provides instructions for:
 
-### Updating the Website
-
-After testing changes locally:
-
-```bash
-npm run build
-git add .
-git commit -m "Update LessonBilly"
-git push origin main
-```
-
-Pushing to the production branch triggers a new Cloudflare Pages build when automatic deployment is configured.
-
-</details>
+1. Enrolling families.
+2. Linking student and parent accounts.
+3. Managing students and classes.
+4. Publishing assessment grades.
+5. Scheduling online lessons.
+6. Creating and publishing flashcards and quizzes independently.
+7. Sharing class materials.
+8. Troubleshooting account and permission issues.
 
 ---
 
 ## Security and Privacy
 
-LessonBilly uses Firebase Authentication and Firestore Security Rules to help control access to student information.
+LessonBilly uses Firebase Authentication and Cloud Firestore Security Rules to restrict access to private student data.
 
-Security considerations include:
+### Security Measures
 
-- Verified account authentication
-- Tutor-controlled student records
-- Parent and student account linking
-- Restricted grade publication
-- Controlled access to class resources
-- No saved student quiz attempts
-- Manual email notifications
+- Email verification is required for private portal access.
+- Student records are restricted to authorized linked accounts and the tutor.
+- Only the tutor can modify student records and publish practice activities.
+- Unpublished assessment grades are not visible to students or parents.
+- Practice answers and attempts are not saved in Firestore.
+- Homework and classwork links should use restricted Google Drive sharing.
 
-### Important Guidelines
+Never commit passwords, service account keys, or real student information to the repository.
 
-Never commit:
+Use fictional accounts and records when testing the application or preparing demonstrations.
 
-- Passwords
-- Firebase Admin SDK service account keys
-- Private API credentials
-- Actual student records
-- Private student documents
-
-Always test permissions with fictional accounts before enrolling real students.
-
-Parental approval and applicable privacy requirements must be addressed before collecting information from children.
-
-Google Drive permissions must be maintained separately from LessonBilly account permissions.
+Parental approval and applicable privacy requirements must be addressed before collecting personal information from children.
 
 ---
 
-## Project Goals
+## Current Limitations
 
-LessonBilly is designed around four principles.
-
-**Accessibility**
-
-Provide an easy-to-use learning platform across desktop and mobile devices.
-
-**Organization**
-
-Keep classes, materials, assessments, and tutoring schedules organized.
-
-**Personalization**
-
-Help students practice the specific subjects and topics covered during tutoring sessions.
-
-**Transparency**
-
-Allow families to monitor progress through published assessments and feedback.
+- Grade notification emails are sent manually.
+- Video lessons use external Google Meet links.
+- LessonBilly does not store meeting recordings.
+- Practice activity sets currently contain 10 flashcards or 10 quiz questions.
+- PDF activity extraction requires selectable text.
+- AI Tutoring Match is an illustrative subject recommendation tool, not a validated educational assessment.
+- Free service tiers have usage limits.
 
 ---
 
-## Future Improvements
+## Project Purpose
 
-Potential improvements include:
+LessonBilly was developed to make remote tutoring easier to manage for students, parents, and tutors.
 
-- Additional practice activity types
-- Improved progress visualizations
-- More customization for tutors
-- Enhanced mobile accessibility
-- Expanded learning resources
+The project combines frontend development, cloud authentication, database security, interactive learning tools, and lightweight machine learning into one platform.
 
-New features will be evaluated with performance, privacy, and maintainability in mind.
-
----
-
-## Important Notes
-
-- LessonBilly is an independent tutoring platform.
-- LessonBilly does not automatically send grade notifications.
-- Lesson scheduling uses external Google Meet links.
-- Meeting recordings are not stored by LessonBilly.
-- Student practice answers are not saved as grades.
-- Browser-based activity generation does not require an AI API key.
-- Free hosting and database services have usage limits.
+It demonstrates practical experience building a full-stack application that supports real educational workflows.
 
 ---
 
