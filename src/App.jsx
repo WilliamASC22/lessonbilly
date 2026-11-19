@@ -2434,7 +2434,7 @@ function Privacy() {
         <p>
           LessonBilly uses Firebase Authentication and
           Firestore for accounts, grades, class information,
-          Google Drive links, and tutor-approved practice
+          Google Drive links, and tutor approved practice
           activities. Google Drive hosts shared PDFs;
           Google Meet hosts live lessons.
         </p>
@@ -2445,15 +2445,6 @@ function Privacy() {
           text for practice creation stay in the current
           browser session. Google Drive permissions
           separately control who can open a shared PDF.
-        </p>
-
-        <p>
-          Parents can request correction or deletion
-          of family records by contacting LessonBilly.
-          This statement needs review and completion
-          for actual business practices, including
-          consent rules for children, before real
-          student enrollment.
         </p>
 
         <a
