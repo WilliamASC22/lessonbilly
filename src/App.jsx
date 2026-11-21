@@ -2429,7 +2429,7 @@ function Privacy() {
           LESSONBILLY
         </span>
 
-        <h1>Privacy information</h1>
+        <h1>Privacy Information</h1>
 
         <p>
           LessonBilly uses Firebase Authentication and
