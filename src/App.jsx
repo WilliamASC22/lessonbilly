@@ -2444,7 +2444,7 @@ function Privacy() {
           saved in Firestore. Unpublished notes and PDF
           text for practice creation stay in the current
           browser session. Google Drive permissions
-          separately control who can open a shared PDF.
+          separately control who can open shared PDFs.
         </p>
 
         <a
