@@ -2433,8 +2433,7 @@ function Privacy() {
 
         <p>
           LessonBilly uses Firebase Authentication and
-          Firestore for accounts, grades, class information,
-          Google Drive links, and tutor approved practice
+          Firestore for accounts, grades, class information, Google Drive links, and tutor approved practice
           activities. Google Drive hosts shared PDFs; Google Meet hosts live lessons.
         </p>
 
